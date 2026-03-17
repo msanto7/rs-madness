@@ -24,7 +24,7 @@ namespace RSMadnessEngine.Api.Controllers
         }
 
         /// <summary>
-        /// Allows a use rto register and returns a valid token if succesful.
+        /// Allows a user to register and returns a valid token if successful.
         /// </summary>
         /// <param name="request"></param>
         /// <returns>AuthResponse object</returns>
@@ -32,7 +32,7 @@ namespace RSMadnessEngine.Api.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register(DTOs.Auth.RegisterRequest request)
         {
-            // validae if the email exists already
+            // validate if the email exists already
             var existingUser = await _userManager.FindByEmailAsync(request.Email);
             if (existingUser != null)
             {
@@ -64,7 +64,7 @@ namespace RSMadnessEngine.Api.Controllers
         }
 
         /// <summary>
-        /// Generates and returns a users token if valid username/password
+        /// Generates and returns a user's token if the username and password are valid.
         /// </summary>
         /// <param name="request"></param>
         /// <returns>AuthResponse obj</returns>
@@ -95,9 +95,9 @@ namespace RSMadnessEngine.Api.Controllers
         }
 
         /// <summary>
-        /// Pulls the logged in users info.
+        /// Retrieves the logged-in user's information.
         /// </summary>
-        /// <returns>displayName and Email in custom obj</returns>
+        /// <returns>The display name and email in a custom object</returns>
         [HttpGet("me")]
         public async Task<IActionResult> Me()
         {
