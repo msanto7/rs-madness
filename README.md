@@ -179,6 +179,9 @@ Implement phase 1 now:
 - Entity Framework 
 - Postgresql Running in a local docker image
 
+- while local api is running, grab json file and import into postman for endpoints
+- import the following link while running the api: http://localhost:5202/openapi/v1.json
+
 ## Dev Workflow
 How the dev workflow feels day-to-day
 Terminal 1: docker compose up -d (Postgres — leave running)
