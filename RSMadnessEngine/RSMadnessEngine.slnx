@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="RSMadnessEngine.Api/RSMadnessEngine.Api.csproj" />
+  <Project Path="RSMadnessEngine.Data/RSMadnessEngine.Data.csproj" Id="e8f009f4-8b15-4464-9fde-a9766948370d" />
 </Solution>
