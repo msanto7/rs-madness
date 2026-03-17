@@ -1,9 +1,6 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using RSMadnessEngine.Data;
 using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
-using System.Formats.Asn1;
 
 namespace RSMadnessEngine.Api.Controllers
 {
@@ -40,7 +37,7 @@ namespace RSMadnessEngine.Api.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(StatusCodes.Status503ServiceUnavailable, new { status = "Unhealthy", error = ex.Message });
+                return StatusCode(Microsoft.AspNetCore.Http.StatusCodes.Status503ServiceUnavailable, new { status = "Unhealthy", error = ex.Message });
             }
         }
     }
