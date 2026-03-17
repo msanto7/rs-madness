@@ -167,3 +167,22 @@ Implement phase 1 now:
 - create PostgreSQL schema and migrations
 - add auth endpoints and basic profile
 - seed teams from workbook
+
+
+
+## FE
+- React
+- dev url - http://localhost:5173/
+
+## BE
+- .NET 10 C#
+- Entity Framework 
+- Postgresql Running in a local docker image
+
+## Dev Workflow
+How the dev workflow feels day-to-day
+Terminal 1: docker compose up -d (Postgres — leave running)
+Terminal 2: dotnet run --project RSMadnessEngine.Api (API on port 5001)
+Terminal 3: cd frontend && npm run dev (React on port 3000)
+Edit React code → browser updates instantly (Vite HMR)
+Edit C# code → restart dotnet (or use dotnet watch)
