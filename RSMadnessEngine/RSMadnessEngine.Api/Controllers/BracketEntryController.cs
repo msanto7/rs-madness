@@ -117,14 +117,16 @@ namespace RSMadnessEngine.Api.Controllers
                 {
                     Id = be.Id,
                     SubmittedAt = be.SubmittedAt,
-                    Ranks = be.EntryTeamRanks.Select(r => new TeamRankDTO
-                    {
-                        TeamId = r.TeamId,
-                        TeamName = r.Team.Name,
-                        Seed = r.Team.Seed,
-                        Region = r.Team.Region,
-                        Rank = r.Rank
-                    }).ToList()
+                    Ranks = be.EntryTeamRanks
+                        .OrderBy(r => r.Rank)
+                        .Select(r => new TeamRankDTO
+                        {
+                            TeamId = r.TeamId,
+                            TeamName = r.Team.Name,
+                            Seed = r.Team.Seed,
+                            Region = r.Team.Region,
+                            Rank = r.Rank
+                        }).ToList()
                 }).FirstOrDefaultAsync();
 
             return Ok(response);
