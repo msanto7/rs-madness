@@ -1,56 +1,36 @@
-import { useEffect, useState } from 'react'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
+import { AuthProvider } from './hooks/useAuth';
+import ProtectedRoute from './components/ProtectedRoute';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 
-interface HealthStatus {
-  status: string;
-  database: string;
-  userCount: number;
-  timestamp: string;
+function RankingPage() {
+  return <div style={{ padding: '2rem' }}><h1>Ranking Page (Coming Soon)</h1></div>;
 }
 
 function App() {
-  const [health, setHealth] = useState<HealthStatus | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch('http://localhost:5202/api/health')
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then(data => setHealth(data))
-      .catch(err => setError(err.message));
-  }, []);
-
   return (
-    <div style={{ padding: '2rem', fontFamily: 'sans-serif' }}>
-      <h1>RS Madness — Connection Test</h1>
+    // wrap everything in auth function
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* anonymous routes */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
 
-      {error && (
-        <div style={{ color: 'red' }}>
-          <strong>Error:</strong> {error}
-        </div>
-      )}
+          {/* protected routes */}
+          <Route path="/ranking" element={
+            <ProtectedRoute>
+              <RankingPage />
+            </ProtectedRoute>
+          } />
 
-      {health && (
-        <table style={{ borderCollapse: 'collapse', marginTop: '1rem' }}>
-          <tbody>
-            {Object.entries(health).map(([key, value]) => (
-              <tr key={key}>
-                <td style={{ padding: '0.5rem 1rem', fontWeight: 'bold', border: '1px solid #ccc' }}>
-                  {key}
-                </td>
-                <td style={{ padding: '0.5rem 1rem', border: '1px solid #ccc' }}>
-                  {String(value)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-
-      {!health && !error && <p>Loading...</p>}
-    </div>
+          {/* redirect unknowns */}
+          <Route path="*" element={<Navigate to="/ranking" />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 
-export default App
+export default App;
