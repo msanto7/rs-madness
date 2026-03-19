@@ -155,11 +155,13 @@ namespace RSMadnessEngine.Api.Controllers
                 return BadRequest(new { errors = new[] { "Bracket Entry already locked in." } });
             }
 
-            var ranks = bracketEntry.EntryTeamRanks.Select(r => new RankAssignment
-            {
-                TeamId = r.TeamId,
-                Rank = r.Rank
-            }).ToList();
+            var ranks = bracketEntry.EntryTeamRanks
+                .OrderBy(r => r.Rank)
+                .Select(r => new RankAssignment
+                {
+                    TeamId = r.TeamId,
+                    Rank = r.Rank
+                }).ToList();
 
             var errors = ValidateRanks(ranks);
             if (errors.Any())
@@ -177,14 +179,16 @@ namespace RSMadnessEngine.Api.Controllers
                 {
                     Id = be.Id,
                     SubmittedAt = be.SubmittedAt,
-                    Ranks = be.EntryTeamRanks.Select(r => new TeamRankDTO
-                    {
-                        TeamId = r.TeamId,
-                        TeamName = r.Team.Name,
-                        Seed = r.Team.Seed,
-                        Region = r.Team.Region,
-                        Rank = r.Rank
-                    }).ToList()
+                    Ranks = be.EntryTeamRanks
+                        .OrderBy(r => r.Rank)
+                        .Select(r => new TeamRankDTO
+                        {
+                            TeamId = r.TeamId,
+                            TeamName = r.Team.Name,
+                            Seed = r.Team.Seed,
+                            Region = r.Team.Region,
+                            Rank = r.Rank
+                        }).ToList()
                 }).FirstOrDefaultAsync();
 
             return Ok(response);
