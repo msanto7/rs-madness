@@ -1,7 +1,7 @@
 ﻿namespace RSMadnessEngine.Api.DTOs.BracketEntry
 {
     /// <summary>
-    /// For the get bracket endpoint -- returns bracket id, submittedAt (to indicate if user has locked there selections), and list of ranked teams
+    /// For the get bracket endpoint -- returns bracket id, submittedAt (to indicate if user has locked their selections), and list of ranked teams
     /// </summary>
     public class GetBracketEntryResponse
     {
