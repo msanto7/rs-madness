@@ -6,6 +6,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using RSMadnessEngine.Data.Entities;
+using System.Linq;
 
 namespace RSMadnessEngine.Api.Controllers
 {
@@ -39,14 +40,16 @@ namespace RSMadnessEngine.Api.Controllers
                 {
                     Id = be.Id,
                     SubmittedAt = be.SubmittedAt,
-                    Ranks = be.EntryTeamRanks.Select(r => new TeamRankDTO
-                    {
-                        TeamId = r.TeamId,
-                        TeamName = r.Team.Name,
-                        Seed = r.Team.Seed,
-                        Region = r.Team.Region,
-                        Rank = r.Rank
-                    }).ToList()
+                    Ranks = be.EntryTeamRanks
+                        .OrderBy(r => r.Rank)
+                        .Select(r => new TeamRankDTO
+                        {
+                            TeamId = r.TeamId,
+                            TeamName = r.Team.Name,
+                            Seed = r.Team.Seed,
+                            Region = r.Team.Region,
+                            Rank = r.Rank
+                        }).ToList()
                 }).FirstOrDefaultAsync();
 
             if (entry == null)
