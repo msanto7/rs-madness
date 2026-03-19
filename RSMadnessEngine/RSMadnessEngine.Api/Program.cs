@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using RSMadnessEngine.Api.Services;
 using RSMadnessEngine.Data;
 using RSMadnessEngine.Data.Entities;
+using RSMadnessEngine.Data.Seed;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -70,5 +71,12 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// seed team data
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await TeamSeeder.SeedTeamsAsync(db);
+}
 
 app.Run();
