@@ -12,10 +12,10 @@ Scoring and ranking rules are locked to the spreadsheet rules, with manual admin
 3. page to honor the excel file
 4. 
 
-## List of things to Improve
+## List of things to Improve -- TODO
 
 1. JWT token is in localStorage...not cookie
-2. 
+2. Validate that the teams ids from the ranking save are actually matching whats in the DB
 
 ## Implementation Plan (Decision-Complete)
 

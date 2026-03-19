@@ -235,6 +235,8 @@ namespace RSMadnessEngine.Api.Controllers
                 errors.Add("Duplicate team Ids found.");
             }
 
+            // TODO -- validate team ids exist in the teams table
+
             return errors;
         }
     }
