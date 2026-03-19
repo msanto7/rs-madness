@@ -182,6 +182,18 @@ Implement phase 1 now:
 - while local api is running, grab json file and import into postman for endpoints
 - import the following link while running the api: http://localhost:5202/openapi/v1.json
 
+
+    Docker DB Flow
+        --> docker-compose.yml (holds the info for db name, username, pwd for local)
+        --> 
+
+    Entity Framework Flow
+        --> add/update entities to the RSMadnessengine.Data/Entities 
+        --> add any new entity classes to the AppDbContext.cs
+        --> execute the following 2 commands while docker DB image is running
+            1. dotnet ef migrations add AddDomainEntities --startup-project RSMadnessEngine.Api --project RSMadnessEngine.Data
+            2. dotnet ef database update --startup-project RSMadnessEngine.Api --project RSMadnessEngine.Data
+
 ## Dev Workflow
 How the dev workflow feels day-to-day
 Terminal 1: docker compose up -d (Postgres — leave running)
