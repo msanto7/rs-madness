@@ -5,6 +5,18 @@
 Build a monorepo with a single `.NET 10` API (including an internal hourly background sync job), a separate `React + TypeScript` static frontend (Vite), and managed PostgreSQL on Render.
 Scoring and ranking rules are locked to the spreadsheet rules, with manual admin override always available if API data is missing/wrong.
 
+### General Feature List
+
+1. drag and drop ordering of teams
+2. pulling live data from sports API to update each persons stats and rank
+3. page to honor the excel file
+4. 
+
+## List of things to Improve
+
+1. JWT token is in localStorage...not cookie
+2. 
+
 ## Implementation Plan (Decision-Complete)
 
 ### Week 1 (Mar 16–Mar 22): Foundation + Scaffolding
