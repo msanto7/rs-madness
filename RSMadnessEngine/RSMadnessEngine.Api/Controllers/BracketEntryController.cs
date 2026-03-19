@@ -81,7 +81,7 @@ namespace RSMadnessEngine.Api.Controllers
                 .Include(be => be.EntryTeamRanks)
                 .FirstOrDefaultAsync(be => be.UserId == userId);
 
-            // make sure we haven't locket in the bracket yet
+            // make sure we haven't locked in the bracket yet
             if (bracketEntry != null && bracketEntry.SubmittedAt != null)
             {
                 return BadRequest("Bracket entry has already been submitted and cannot be modified.");
