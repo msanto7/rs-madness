@@ -7,17 +7,17 @@ export default function RegisterPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
-    const [error, setError] = useState("");
+    const [errors, setErrors] = useState<string[]>([]);
 
     const navigate = useNavigate();
     const { register } = useAuth();
 
     const handleSubmit = async (e: { preventDefault: () => void }) => {
         e.preventDefault();
-        setError("");
+        setErrors([]);
 
         if (password !== confirmPassword) {
-            setError("Passwords do not match");
+            setErrors(["Passwords do not match"]);
             return;
         }
 
@@ -26,11 +26,12 @@ export default function RegisterPage() {
             navigate("/ranking");
         } catch (err: any) {
             const data = err.response?.data;
-            if (data?.errors) {
-                const messages = Array.isArray(data.errors) ? data.errors.map((e: any) => e.msg).join(", ") : String(data.errors);
-                setError(messages);
+            if (Array.isArray(data)) {
+                setErrors(data.map((e: any) => e.description));
+            } else if (data?.errors) {
+                setErrors(Object.values(data.errors).flat() as string[]);
             } else {
-                setError(data?.error ?? data ?? "Registration failed");
+                setErrors([data?.error ?? data ?? "Registration failed"]);
             }
         }
     };
@@ -85,7 +86,13 @@ export default function RegisterPage() {
           />
         </div>
 
-        {error && <p style={{ color: 'red' }}>{error}</p>}
+        {errors.length > 0 && (
+            <ul style={{ color: 'red', paddingLeft: '1.2rem' }}>
+                {errors.map((msg, i) => (
+                    <li key={i}>{msg}</li>
+                ))}
+            </ul>
+        )}
 
         <button type="submit" style={{ padding: '0.5rem 1.5rem' }}>
           Create Account
