@@ -195,7 +195,7 @@ namespace RSMadnessEngine.Api.Controllers
         }
 
         /// <summary>
-        /// Method to validate the bracket rankong rules before saving
+        /// Method to validate the bracket ranking rules before saving
         /// </summary>
         /// <param name="ranks"></param>
         /// <returns></returns>
