@@ -8,7 +8,7 @@ const apiClient = axios.create({
     },
 });
 
-// interceptor for outgoing requests to the API
+// interceptor for outgoing requests to the API - jwt token attached in header
 apiClient.interceptors.request.use((config => {
     const token = localStorage.getItem('token');
     if (token) {
