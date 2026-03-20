@@ -200,6 +200,7 @@ Implement phase 1 now:
 
     FREE Sports API I am using for the live game data refresh
         - https://github.com/pseudo-r/Public-ESPN-API
+        - https://github.com/pseudo-r/Public-ESPN-API/blob/main/docs/sports/basketball.md
 
 ## Dev Workflow
 How the dev workflow feels day-to-day

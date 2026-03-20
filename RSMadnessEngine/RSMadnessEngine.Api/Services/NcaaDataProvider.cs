@@ -24,7 +24,7 @@ namespace RSMadnessEngine.Api.Services
             try
             {
                 // api endpoint with date filtering
-                var url = $"{espnApiUrl}?groups=100&limit=200&dates=20260301-20260415";
+                var url = $"{espnApiUrl}?groups=100&limit=200&dates=20260319-20260415";
                 _logger.LogInformation("Fetching tournament results from ESPN API: {Url}", url);
 
                 // make call to ESPN API endpoint
@@ -34,9 +34,57 @@ namespace RSMadnessEngine.Api.Services
                 var content = await response.Content.ReadAsStringAsync();
                 using var jsonDoc = JsonDocument.Parse(content);
 
+                var events = jsonDoc.RootElement.GetProperty("events");
+
                 var results = new List<GameResult>();
 
+                // loop the api events
+                foreach (var evt in events.EnumerateArray())
+                {
+                    var competitions = evt.GetProperty("competitions");
+                    // loop the api competitions
+                    foreach (var comp in competitions.EnumerateArray())
+                    {
+                        // games need to be completed
+                        var status = comp.GetProperty("status").GetProperty("type");
+                        if (!status.GetProperty("completed").GetBoolean())
+                        {
+                            continue;
+                        }
 
+                        var competitors = comp.GetProperty("competitors");
+                        string? winnerTeamName = null;
+                        string? loserTeamName = null;
+
+                        // loop teams in each game
+                        foreach (var team in competitors.EnumerateArray())
+                        {
+                            var teamName = team.GetProperty("team").GetProperty("shortDisplayName").GetString();
+                            var isWinner = team.GetProperty("winner").GetBoolean();
+
+                            if (isWinner)
+                            {
+                                winnerTeamName = teamName;
+                            }
+                            else
+                            {
+                                loserTeamName = teamName;
+                            }
+                        }
+
+                        // add to the results list
+                        if (winnerTeamName != null && loserTeamName != null)
+                        {
+                            results.Add(new GameResult
+                            {
+                                WinnerTeamName = winnerTeamName!,
+                                LoserTeamName = loserTeamName!
+                            });
+                        }
+                    }
+                }
+
+                _logger.LogInformation("Successfully fetched tournament results from ESPN API. Total games: {Count}", results.Count);
                 return results;
             }
             catch (Exception ex)

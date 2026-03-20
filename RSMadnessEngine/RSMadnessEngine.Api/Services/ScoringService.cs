@@ -15,6 +15,10 @@ namespace RSMadnessEngine.Api.Services
             _logger = logger;
         }
 
+        /// <summary>
+        /// Pulls all the submitted bracket entries and recalculates the points.
+        /// </summary>
+        /// <returns></returns>
         public async Task CalculateScoresAsync()
         {
             // load teams
