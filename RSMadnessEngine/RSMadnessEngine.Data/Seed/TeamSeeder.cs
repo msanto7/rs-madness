@@ -76,7 +76,7 @@ public static class TeamSeeder
             new() { Name = "Alabama", Seed = 4, Region = "Midwest" },
             new() { Name = "Hofstra", Seed = 13, Region = "Midwest" },
             new() { Name = "Tennessee", Seed = 6, Region = "Midwest" },
-            new() { Name = "Miami", Seed = 11, Region = "Midwest" },
+            new() { Name = "Miami OH", Seed = 11, Region = "Midwest" },
             new() { Name = "Virginia", Seed = 3, Region = "Midwest" },
             new() { Name = "Wright St", Seed = 14, Region = "Midwest" },
             new() { Name = "Kentucky", Seed = 7, Region = "Midwest" },
