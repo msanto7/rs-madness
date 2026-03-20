@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using RSMadnessEngine.Api.BackgroundJobs;
 using RSMadnessEngine.Api.Services;
 using RSMadnessEngine.Data;
 using RSMadnessEngine.Data.Entities;
