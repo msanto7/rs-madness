@@ -3,9 +3,11 @@ import { AuthProvider } from './hooks/useAuth';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import RankingPage from './pages/RankingPage';
+import Layout from './components/Layout';
 
-function RankingPage() {
-  return <div style={{ padding: '2rem' }}><h1>Ranking Page (Coming Soon)</h1></div>;
+function LeaderboardPage() {
+  return <h1>Leaderboard Page (Coming Soon)</h1>;
 }
 
 function App() {
@@ -19,11 +21,10 @@ function App() {
           <Route path="/register" element={<RegisterPage />} />
 
           {/* protected routes */}
-          <Route path="/ranking" element={
-            <ProtectedRoute>
-              <RankingPage />
-            </ProtectedRoute>
-          } />
+          <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+            <Route path="/ranking" element={<RankingPage />} />
+            <Route path="/leaderboard" element={<LeaderboardPage />} />
+          </Route>
 
           {/* redirect unknowns */}
           <Route path="*" element={<Navigate to="/ranking" />} />

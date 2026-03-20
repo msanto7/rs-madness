@@ -16,6 +16,7 @@ Scoring and ranking rules are locked to the spreadsheet rules, with manual admin
 
 1. JWT token is in localStorage...not cookie
 2. Validate that the teams ids from the ranking save are actually matching whats in the DB
+3. Save and Submit user feedback so they know it saved on the ranking page
 
 ## Implementation Plan (Decision-Complete)
 
