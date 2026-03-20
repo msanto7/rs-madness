@@ -5,10 +5,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import RankingPage from './pages/RankingPage';
 import Layout from './components/Layout';
-
-function LeaderboardPage() {
-  return <h1>Leaderboard Page (Coming Soon)</h1>;
-}
+import LeaderboardPage from './pages/LeaderboardPage';
 
 function App() {
   return (
