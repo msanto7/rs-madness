@@ -21,6 +21,7 @@ builder.Services.AddIdentityCore<AppUser>(options =>
 
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IScoringService, ScoringService>();
+builder.Services.AddScoped<ISyncService, SyncService>();
 builder.Services.AddHttpClient<INcaaDataProvider, NcaaDataProvider>();
 builder.Services.AddHostedService<TournamentSyncBackgroundJob>();
 

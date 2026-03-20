@@ -16,6 +16,8 @@ Scoring and ranking rules are locked to the spreadsheet rules, with manual admin
     - this is also going to cause an issue already because there are 2 damn Miami teams
     - so need to store the api's team ID...then do the look based on that instead
     - the seeder and the name lookup in the data service need to change
+7. need to reset the team ids in the db -- my current bracket entry wont match the teamids of the bracket entry from before??
+    - might not matter though because I am doing the team name lookup right now...will check later
 
 
 
