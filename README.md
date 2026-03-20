@@ -198,6 +198,9 @@ Implement phase 1 now:
         --> using a hosted service from .NET.Sdk.Worker -- delaying the job every hour
         --> so we get fresh team information...and fresh leaderboard updates every hour
 
+    FREE Sports API I am using for the live game data refresh
+        - https://github.com/pseudo-r/Public-ESPN-API
+
 ## Dev Workflow
 How the dev workflow feels day-to-day
 Terminal 1: docker compose up -d (Postgres — leave running)
