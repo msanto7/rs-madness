@@ -60,7 +60,7 @@ export default function RankingPage() {
       // Try to load existing entry first
       const entryRes = await apiClient.get<EntryResponse>('/bracketentry/me');
       setSubmittedAt(entryRes.data.submittedAt);
-      setTeams(entryRes.data.ranks.sort((a, b) => a.rank - b.rank));
+      setTeams([...entryRes.data.ranks].sort((a, b) => a.rank - b.rank));
     } catch (err: any) {
       if (err.response?.status === 404) {
         // No entry yet — load fresh teams and assign default ranks
