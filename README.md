@@ -194,6 +194,10 @@ Implement phase 1 now:
             1. dotnet ef migrations add AddDomainEntities --startup-project RSMadnessEngine.Api --project RSMadnessEngine.Data
             2. dotnet ef database update --startup-project RSMadnessEngine.Api --project RSMadnessEngine.Data
 
+    Background Job For Pulling ESPN data and Recalculating the bracket leaderboard
+        --> using a hosted service from .NET.Sdk.Worker -- delaying the job every hour
+        --> so we get fresh team information...and fresh leaderboard updates every hour
+
 ## Dev Workflow
 How the dev workflow feels day-to-day
 Terminal 1: docker compose up -d (Postgres — leave running)
