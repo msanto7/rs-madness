@@ -1,4 +1,6 @@
-﻿namespace RSMadnessEngine.Api.BackgroundJobs
+﻿using RSMadnessEngine.Api.Services;
+
+namespace RSMadnessEngine.Api.BackgroundJobs
 {
     public class TournamentSyncBackgroundJob : BackgroundService
     {
@@ -26,6 +28,8 @@
                 try
                 {
                     using var scope = _serviceScopeFactory.CreateScope();
+                    var syncService = scope.ServiceProvider.GetRequiredService<ISyncService>();
+                    await syncService.SyncGameDataAndRecalculateAsync();
                 }
                 catch (Exception ex)
                 {

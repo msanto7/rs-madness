@@ -12,7 +12,7 @@ Scoring and ranking rules are locked to the spreadsheet rules, with manual admin
 3. page to honor the excel file
 4. fix the submit save flow for the ranking page (submit fails if no save first)
 5. fix the ranking page ordering...order by seed and reverse the rank numbers
-
+6. need to maybe pull the teamID from the espn id...right now I am just copying the "shortDisplayName" field from the api response...and making sure our team names match in the db so I can just look them up by name
 
 
 
