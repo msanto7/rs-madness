@@ -10,7 +10,8 @@ Scoring and ranking rules are locked to the spreadsheet rules, with manual admin
 1. drag and drop ordering of teams
 2. pulling live data from sports API to update each persons stats and rank
 3. page to honor the excel file
-4. 
+4. fix the submit save flow for the ranking page (submit fails if no save first)
+5. fix the ranking page ordering...order by seed and reverse the rank numbers
 
 ## List of things to Improve -- TODO
 
