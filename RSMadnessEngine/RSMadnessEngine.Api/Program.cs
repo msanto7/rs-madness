@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using RSMadnessEngine.Api.BackgroundJobs;
 using RSMadnessEngine.Api.Services;
 using RSMadnessEngine.Data;
 using RSMadnessEngine.Data.Entities;
@@ -19,6 +20,10 @@ builder.Services.AddIdentityCore<AppUser>(options =>
 }).AddEntityFrameworkStores<AppDbContext>();
 
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IScoringService, ScoringService>();
+builder.Services.AddScoped<ISyncService, SyncService>();
+builder.Services.AddHttpClient<INcaaDataProvider, NcaaDataProvider>();
+builder.Services.AddHostedService<TournamentSyncBackgroundJob>();
 
 // jwt validation in request pipeline
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>

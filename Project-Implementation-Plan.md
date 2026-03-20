@@ -12,6 +12,15 @@ Scoring and ranking rules are locked to the spreadsheet rules, with manual admin
 3. page to honor the excel file
 4. fix the submit save flow for the ranking page (submit fails if no save first)
 5. fix the ranking page ordering...order by seed and reverse the rank numbers
+6. need to maybe pull the teamID from the espn id...right now I am just copying the "shortDisplayName" field from the api response...and making sure our team names match in the db so I can just look them up by name
+    - this is also going to cause an issue already because there are 2 damn Miami teams
+    - so need to store the api's team ID...then do the look based on that instead
+    - the seeder and the name lookup in the data service need to change
+7. need to reset the team ids in the db -- my current bracket entry wont match the teamids of the bracket entry from before??
+    - might not matter though because I am doing the team name lookup right now...will check later
+
+
+
 
 ## List of things to Improve -- TODO
 
