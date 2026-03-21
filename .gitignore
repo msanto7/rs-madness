@@ -37,3 +37,6 @@ pnpm-debug.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Local CLI cache
+.dotnet/
