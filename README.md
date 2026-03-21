@@ -2,86 +2,114 @@
 
 March Madness pool app based on `Blank Bracket 2026.xlsx`.
 
-Live site found at: https://rs-madness-web.onrender.com
+- Live site: https://rs-madness-web.onrender.com
+- Frontend: React + TypeScript (Vite)
+- Backend: .NET 10 Web API + EF Core
+- Database: PostgreSQL 17
 
 ## Goal
 
-Build a simple app where users:
+Build a simple company pool app where users can:
 
 1. Log in
-2. Create their bracket entry (using the same scoring logic as the spreadsheet)
-3. Track score updates as real tournament results come in
-4. See a live leaderboard
+2. Create a ranked bracket entry
+3. Track points as games finish
+4. View a live leaderboard
 
 ## Bracket Rules
 
 1. Rank all 64 teams.
-2. Use each number from 1 through 64 exactly once (no duplicates).
+2. Use each number from `1` through `64` exactly once.
 3. Higher rank values should go to teams expected to advance further.
-4. Scoring: every time a team wins, the user earns that team's assigned rank value.
-5. Example: rank 50 and 3 wins = 150 points from that team.
-6. Upsets still score: if a lower-ranked-by-seed team wins, points are still based only on the user's assigned rank for that team.
+4. Every time a team wins, you earn the rank value you assigned to that team.
+5. Example: rank `50` and `3` wins = `150` points.
+6. Upsets still score using your assigned rank for the winning team.
 
-
-## Scoring Formulas
-
-Per user entry, scoring should be:
+## Scoring Logic
 
 1. `current_points = SUM(team.rank * team.wins)`
 2. `potential_points = SUM(team.in * (6 - team.wins) * team.rank)`
 3. `max_possible = current_points + potential_points`
 
+## Tech Stack
 
-## FE Tech
+### Frontend
 
-1. React + TypeScript
+- React + TypeScript
+- Vite
+- Deployed as a Render static site
+- Local URL: `http://localhost:5173`
 
-    dev url - http://localhost:5173/
+### Backend
 
-    Hosting
-    - static site on render
-    - https://rs-madness-web.onrender.com
+- .NET 10 Web API
+- Entity Framework Core
+- Hosted service for hourly sync + score recalculation
+- Deployed as a Render web service
+- Local API URL: `http://localhost:5202`
+- OpenAPI JSON: `http://localhost:5202/openapi/v1.json`
 
-## BE Tech
+### Database
 
-1. .NET 10 API
-    - Entity Framework 
-    - Postgresql Running in a local docker image
+- PostgreSQL 17
+- Local DB via Docker Compose
+- Managed PostgreSQL in Render for production
 
-    - while local api is running, grab json file and import into postman for endpoints
-    - import the following link while running the api: http://localhost:5202/openapi/v1.json
+## External Sports Data
 
-    Background Job For Pulling ESPN data and Recalculating the bracket leaderboard
-            --> using a hosted service from .NET.Sdk.Worker -- delaying the job every hour
-            --> so we get fresh team information...and fresh leaderboard updates every hour
+Current source:
 
-    FREE Sports API I am using for the live game data refresh
-        - https://github.com/pseudo-r/Public-ESPN-API
-        - https://github.com/pseudo-r/Public-ESPN-API/blob/main/docs/sports/basketball.md
+- https://github.com/pseudo-r/Public-ESPN-API
+- https://github.com/pseudo-r/Public-ESPN-API/blob/main/docs/sports/basketball.md
 
-    Hosting
-        - web service on render
+## Local Development
 
+### 1) Start the database
 
-## Database Tech
+```powershell
+cd RSMadnessEngine
+docker compose up -d
+```
 
-    1. Postgresql 17
+### 2) Run the API
 
-    Docker DB Flow
-        --> docker-compose.yml (holds the info for db name, username, pwd for local)
-        --> docker compose up -d (starts the local postgresql db in docker container)
+```powershell
+cd RSMadnessEngine
+dotnet run --project RSMadnessEngine.Api
+```
 
-    Entity Framework Flow
-        --> add/update entities to the RSMadnessengine.Data/Entities 
-        --> add any new entity classes to the AppDbContext.cs
-        --> execute the following 2 commands while docker DB image is running
-            1. dotnet ef migrations add AddDomainEntities --startup-project RSMadnessEngine.Api --project RSMadnessEngine.Data
-            2. dotnet ef database update --startup-project RSMadnessEngine.Api --project RSMadnessEngine.Data
-   
+API runs at `http://localhost:5202`.
 
-## Local Dev Workflow
+### 3) Run the frontend
 
-1. clone repository
-2. Terminal 1: docker compose up -d (Postgres — leave running)
-3. Terminal 2: dotnet run --project RSMadnessEngine.Api (API on port 5001)
-4. Terminal 3: cd frontend && npm run dev (React on port 3000)
+```powershell
+cd RSMadnessWeb
+npm run dev
+```
+
+Frontend runs at `http://localhost:5173`.
+
+## Entity Framework Workflow
+
+When you change entities:
+
+1. Update entity classes in `RSMadnessEngine.Data/Entities`
+2. Register new entities in `AppDbContext`
+3. Create and apply migration
+
+```powershell
+cd RSMadnessEngine
+dotnet ef migrations add <MigrationName> --startup-project RSMadnessEngine.Api --project RSMadnessEngine.Data
+dotnet ef database update --startup-project RSMadnessEngine.Api --project RSMadnessEngine.Data
+```
+
+## CI/CD
+
+- GitHub Actions workflow: `.github/workflows/ci.yml`
+- Runs backend and frontend builds on PRs/pushes to `main`
+- Render auto-deploys from `main` after merge
+
+## Notes
+
+- Use local Docker Postgres for development and testing.
+- Use Render environment variables for production secrets and connection strings.
