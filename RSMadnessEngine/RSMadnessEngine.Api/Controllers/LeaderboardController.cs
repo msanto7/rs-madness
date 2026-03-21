@@ -35,7 +35,7 @@ namespace RSMadnessEngine.Api.Controllers
                     be.SubmittedAt
                 })
                 .OrderByDescending(be => be.CurrentPoints)
-                .ThenBy(be => be.PotentialPoints)
+                .ThenByDescending(be => be.PotentialPoints)
                 .ToListAsync();
 
             var result = bracketEntries.Select((be, index) => new LeaderboardEntryResponse

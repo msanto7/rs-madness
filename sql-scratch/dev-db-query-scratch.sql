@@ -27,3 +27,17 @@ delete from "Teams"
 
 ALTER SEQUENCE "Teams_Id_seq" RESTART WITH 1;
 
+
+
+-- query the teams that have been knocked out to check with the actual bracket data
+-- first round eliminations
+
+select *
+from "Teams" t
+        inner join "TeamStatuses" ts ON ts."TeamId" = t."Id"
+where "IsAlive" = false
+
+
+
+
+
