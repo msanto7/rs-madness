@@ -24,11 +24,11 @@ namespace RSMadnessEngine.Api.Services
             try
             {
                 // api endpoint with date filtering
-                var url = $"{espnApiUrl}?groups=100&limit=200&dates=20260319-20260415";
-                _logger.LogInformation("Fetching tournament results from ESPN API: {Url}", url);
+                var dateFilteredUrl = $"{espnApiUrl}?groups=100&limit=200&dates=20260319-20260415";
+                _logger.LogInformation("Fetching tournament results from ESPN API: {Url}", dateFilteredUrl);
 
                 // make call to ESPN API endpoint
-                var response = await _httpClient.GetAsync(espnApiUrl);
+                var response = await _httpClient.GetAsync(dateFilteredUrl);
                 response.EnsureSuccessStatusCode();
 
                 var content = await response.Content.ReadAsStringAsync();
