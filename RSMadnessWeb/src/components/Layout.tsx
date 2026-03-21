@@ -51,6 +51,16 @@ export default function Layout() {
             })}>
               Leaderboard
             </NavLink>
+            <NavLink to="/blank-bracket" style={({ isActive }) => ({
+              color: isActive ? 'var(--orange)' : '#94a3b8',
+              textDecoration: 'none',
+              fontSize: '0.9rem',
+              fontWeight: isActive ? 600 : 400,
+              padding: '0.25rem 0',
+              borderBottom: isActive ? '2px solid var(--orange)' : '2px solid transparent',
+            })}>
+              In Honor Of Those Before Us
+            </NavLink>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>

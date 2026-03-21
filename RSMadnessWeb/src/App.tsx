@@ -6,6 +6,7 @@ import RegisterPage from './pages/RegisterPage';
 import RankingPage from './pages/RankingPage';
 import Layout from './components/Layout';
 import LeaderboardPage from './pages/LeaderboardPage';
+import BlankBracketPage from './pages/BlankBracketPage';
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
           <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route path="/ranking" element={<RankingPage />} />
             <Route path="/leaderboard" element={<LeaderboardPage />} />
+            <Route path="/blank-bracket" element={<BlankBracketPage />} />
           </Route>
 
           {/* redirect unknowns */}
