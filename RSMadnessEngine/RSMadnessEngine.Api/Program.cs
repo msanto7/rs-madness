@@ -43,12 +43,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
     options.MapInboundClaims = false;
 });
 
-// allow the dev react app
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? ["http://localhost:5173"];
+
+// allow FE origins from config (dev + prod)
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("Dev", policy =>
+    options.AddPolicy("Frontend", policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyMethod()
               .AllowAnyHeader();
     });
@@ -64,8 +66,9 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
-    app.UseCors("Dev");
 }
+
+app.UseCors("Frontend");
 
 if (!app.Environment.IsDevelopment())
 {
@@ -81,6 +84,7 @@ app.MapControllers();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.MigrateAsync();
     await TeamSeeder.SeedTeamsAsync(db);
 }
 
