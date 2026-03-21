@@ -20,7 +20,7 @@ public static class TeamSeeder
             new() { Name = "St John's", Seed = 5, Region = "East" },
             new() { Name = "Northern Iowa", Seed = 12, Region = "East" },
             new() { Name = "Kansas", Seed = 4, Region = "East" },
-            new() { Name = "Cal Baptist", Seed = 13, Region = "East" },
+            new() { Name = "CA Baptist", Seed = 13, Region = "East" },
             new() { Name = "Louisville", Seed = 6, Region = "East" },
             new() { Name = "South Florida", Seed = 11, Region = "East" },
             new() { Name = "Michigan St", Seed = 3, Region = "East" },
