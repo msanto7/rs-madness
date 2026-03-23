@@ -7,6 +7,7 @@ using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using RSMadnessEngine.Data.Entities;
 using System.Linq;
+using RSMadnessEngine.Api.Services;
 
 namespace RSMadnessEngine.Api.Controllers
 {
@@ -18,10 +19,12 @@ namespace RSMadnessEngine.Api.Controllers
     {
         private readonly AppDbContext _dbContext;
         private string GetUserId() => User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
+        private readonly IScoringService _scoringService;
 
-        public BracketEntryController(AppDbContext dbContext)
+        public BracketEntryController(AppDbContext dbContext, IScoringService scoringService)
         {
             _dbContext = dbContext;
+            _scoringService = scoringService;
         }        
 
         /// <summary>
@@ -171,6 +174,9 @@ namespace RSMadnessEngine.Api.Controllers
 
             bracketEntry.SubmittedAt = DateTime.UtcNow;
             await _dbContext.SaveChangesAsync();
+
+            // calculate score for the current bracket
+            await _scoringService.CalculatecoreAsync(bracketEntry);
 
             // return fresh response
             var response = await _dbContext.BracketEntries
