@@ -27,6 +27,13 @@ interface Team {
   region: string;
 }
 
+function buildRanksSignature(ranks: TeamRank[]): string {
+  return [...ranks]
+    .sort((a, b) => a.teamId - b.teamId)
+    .map((r) => `${r.teamId}:${r.rank}`)
+    .join('|');
+}
+
 export default function RankingPage() {
   const [teams, setTeams] = useState<TeamRank[]>([]);
   const [submittedAt, setSubmittedAt] = useState<string | null>(null);
@@ -37,6 +44,7 @@ export default function RankingPage() {
   const [hasSavedDraft, setHasSavedDraft] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lastSavedSignature, setLastSavedSignature] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -46,6 +54,9 @@ export default function RankingPage() {
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
+
+    setActionMessage('');
+    setActionMessageType('');
 
     setTeams((prev) => {
       const oldIndex = prev.findIndex((t) => t.teamId === active.id);
@@ -64,9 +75,11 @@ export default function RankingPage() {
     try {
       // Try to load existing entry first
       const entryRes = await apiClient.get<EntryResponse>('/bracketentry/me');
+      const sortedRanks = [...entryRes.data.ranks].sort((a, b) => a.rank - b.rank);
       setSubmittedAt(entryRes.data.submittedAt);
-      setTeams([...entryRes.data.ranks].sort((a, b) => a.rank - b.rank));
+      setTeams(sortedRanks);
       setHasSavedDraft(true);
+      setLastSavedSignature(buildRanksSignature(sortedRanks));
     } catch (err: any) {
       if (err.response?.status === 404) {
         // No entry yet - load fresh teams and assign default ranks
@@ -81,6 +94,7 @@ export default function RankingPage() {
           }))
         );
         setHasSavedDraft(false);
+        setLastSavedSignature(null);
       } else {
         setLoadError('Failed to load data.');
       }
@@ -93,6 +107,8 @@ export default function RankingPage() {
   if (loadError) return <p style={{ color: '#ef4444' }}>{loadError}</p>;
 
   const isLocked = submittedAt !== null;
+  const currentSignature = buildRanksSignature(teams);
+  const hasUnsavedChanges = !isLocked && (lastSavedSignature === null || currentSignature !== lastSavedSignature);
   const submitDisabled = !hasSavedDraft || isSaving || isSubmitting;
   const submitBtnStyle: React.CSSProperties = {
     ...btnStyle,
@@ -165,6 +181,19 @@ export default function RankingPage() {
         </p>
       )}
 
+      {!isLocked && (
+        <p
+          style={{
+            marginTop: 0,
+            marginBottom: '1rem',
+            color: hasUnsavedChanges ? '#f59e0b' : '#16a34a',
+            fontWeight: 600,
+          }}
+        >
+          {hasUnsavedChanges ? 'Unsaved changes. Save draft to keep your latest ranking.' : 'All changes saved.'}
+        </p>
+      )}
+
       <div
         style={{
           display: 'flex',
@@ -216,9 +245,11 @@ export default function RankingPage() {
       };
 
       const res = await apiClient.put<EntryResponse>('/bracketentry/me/ranks', payload);
-      setTeams(res.data.ranks.sort((a, b) => a.rank - b.rank));
+      const sortedRanks = res.data.ranks.sort((a, b) => a.rank - b.rank);
+      setTeams(sortedRanks);
       setSubmittedAt(res.data.submittedAt);
       setHasSavedDraft(true);
+      setLastSavedSignature(buildRanksSignature(sortedRanks));
       setActionMessage('Draft saved successfully.');
       setActionMessageType('success');
     } catch (err: any) {
