@@ -1,9 +1,23 @@
-import { NavLink, Outlet, useNavigate } from 'react-router';
+import { useEffect, useState } from 'react';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../hooks/useAuth';
+import './Layout.css';
+
+const navItems = [
+  { to: '/ranking', label: 'Ranking' },
+  { to: '/leaderboard', label: 'Leaderboard' },
+  { to: '/blank-bracket', label: 'In Honor of Those Before Us' },
+];
 
 export default function Layout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
 
   const handleLogout = () => {
     logout();
@@ -11,87 +25,66 @@ export default function Layout() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <nav style={{
-        background: 'var(--navy)',
-        borderBottom: '3px solid var(--orange)',
-        padding: '0 1.5rem',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        height: '56px',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-          <span style={{
-            color: 'var(--orange)',
-            fontWeight: 700,
-            fontSize: '1.25rem',
-            letterSpacing: '-0.5px',
-          }}>
-            RS Madness
-          </span>
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <NavLink to="/ranking" style={({ isActive }) => ({
-              color: isActive ? 'var(--orange)' : '#94a3b8',
-              textDecoration: 'none',
-              fontSize: '0.9rem',
-              fontWeight: isActive ? 600 : 400,
-              padding: '0.25rem 0',
-              borderBottom: isActive ? '2px solid var(--orange)' : '2px solid transparent',
-            })}>
-              Ranking
-            </NavLink>
-            <NavLink to="/leaderboard" style={({ isActive }) => ({
-              color: isActive ? 'var(--orange)' : '#94a3b8',
-              textDecoration: 'none',
-              fontSize: '0.9rem',
-              fontWeight: isActive ? 600 : 400,
-              padding: '0.25rem 0',
-              borderBottom: isActive ? '2px solid var(--orange)' : '2px solid transparent',
-            })}>
-              Leaderboard
-            </NavLink>
-            <NavLink to="/blank-bracket" style={({ isActive }) => ({
-              color: isActive ? 'var(--orange)' : '#94a3b8',
-              textDecoration: 'none',
-              fontSize: '0.9rem',
-              fontWeight: isActive ? 600 : 400,
-              padding: '0.25rem 0',
-              borderBottom: isActive ? '2px solid var(--orange)' : '2px solid transparent',
-            })}>
-              In Honor Of Those Before Us
-            </NavLink>
+    <div className="app-shell">
+      <header className="top-nav">
+        <div className="top-nav__bar">
+          <div className="top-nav__brand-wrap">
+            <span className="top-nav__brand">RS Madness</span>
+            <span className="top-nav__badge">2026</span>
           </div>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>
-            {user?.displayName}
-          </span>
+
+          <nav className="top-nav__links top-nav__links--desktop">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) => `top-nav__link ${isActive ? 'top-nav__link--active' : ''}`}
+              >
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
+
+          <div className="top-nav__actions top-nav__actions--desktop">
+            <span className="top-nav__user">{user?.displayName}</span>
+            <button onClick={handleLogout} className="top-nav__logout-btn">
+              Logout
+            </button>
+          </div>
+
           <button
-            onClick={handleLogout}
-            style={{
-              background: 'transparent',
-              border: '1px solid #94a3b8',
-              color: '#94a3b8',
-              padding: '0.3rem 0.75rem',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '0.8rem',
-            }}
+            type="button"
+            className="top-nav__menu-btn"
+            aria-label={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            aria-expanded={isMobileMenuOpen}
+            onClick={() => setIsMobileMenuOpen((prev) => !prev)}
           >
-            Logout
+            {isMobileMenuOpen ? 'Close' : 'Menu'}
           </button>
         </div>
-      </nav>
 
-      <main style={{
-        flex: 1,
-        padding: '1.5rem',
-        maxWidth: '1126px',
-        width: '100%',
-        margin: '0 auto',
-        boxSizing: 'border-box',
-      }}>
+        <div className={`top-nav__mobile-panel ${isMobileMenuOpen ? 'top-nav__mobile-panel--open' : ''}`}>
+          <nav className="top-nav__links top-nav__links--mobile">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) => `top-nav__link ${isActive ? 'top-nav__link--active' : ''}`}
+              >
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
+          <div className="top-nav__actions top-nav__actions--mobile">
+            <span className="top-nav__user">{user?.displayName}</span>
+            <button onClick={handleLogout} className="top-nav__logout-btn">
+              Logout
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="app-shell__main">
         <Outlet />
       </main>
     </div>

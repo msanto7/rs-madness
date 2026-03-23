@@ -1,7 +1,6 @@
 export default function BlankBracketPage() {
   return (
     <div style={{ maxWidth: '720px' }}>
-      <h1 style={{ marginBottom: '0.75rem' }}>Blank Bracket 2026</h1>
       <h2 style={{ marginBottom: '0.75rem' }}>
         “Every company has one Excel file that, if deleted, would cause total chaos.”
       </h2>
