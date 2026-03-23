@@ -27,11 +27,24 @@ interface Team {
   region: string;
 }
 
+function buildRanksSignature(ranks: TeamRank[]): string {
+  return [...ranks]
+    .sort((a, b) => a.teamId - b.teamId)
+    .map((r) => `${r.teamId}:${r.rank}`)
+    .join('|');
+}
+
 export default function RankingPage() {
   const [teams, setTeams] = useState<TeamRank[]>([]);
   const [submittedAt, setSubmittedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [loadError, setLoadError] = useState('');
+  const [actionMessage, setActionMessage] = useState('');
+  const [actionMessageType, setActionMessageType] = useState<'success' | 'error' | ''>('');
+  const [hasSavedDraft, setHasSavedDraft] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lastSavedSignature, setLastSavedSignature] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -42,9 +55,12 @@ export default function RankingPage() {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
+    setActionMessage('');
+    setActionMessageType('');
+
     setTeams((prev) => {
-      const oldIndex = prev.findIndex(t => t.teamId === active.id);
-      const newIndex = prev.findIndex(t => t.teamId === over.id);
+      const oldIndex = prev.findIndex((t) => t.teamId === active.id);
+      const newIndex = prev.findIndex((t) => t.teamId === over.id);
       const reordered = arrayMove(prev, oldIndex, newIndex);
       // Reassign ranks based on new positions
       return reordered.map((t, i) => ({ ...t, rank: i + 1 }));
@@ -59,21 +75,28 @@ export default function RankingPage() {
     try {
       // Try to load existing entry first
       const entryRes = await apiClient.get<EntryResponse>('/bracketentry/me');
+      const sortedRanks = [...entryRes.data.ranks].sort((a, b) => a.rank - b.rank);
       setSubmittedAt(entryRes.data.submittedAt);
-      setTeams([...entryRes.data.ranks].sort((a, b) => a.rank - b.rank));
+      setTeams(sortedRanks);
+      setHasSavedDraft(true);
+      setLastSavedSignature(buildRanksSignature(sortedRanks));
     } catch (err: any) {
       if (err.response?.status === 404) {
-        // No entry yet — load fresh teams and assign default ranks
+        // No entry yet - load fresh teams and assign default ranks
         const teamsRes = await apiClient.get<Team[]>('/teams');
-        setTeams(teamsRes.data.map((t, i) => ({
-          teamId: t.id,
-          teamName: t.name,
-          seed: t.seed,
-          region: t.region,
-          rank: i + 1,
-        })));
+        setTeams(
+          teamsRes.data.map((t, i) => ({
+            teamId: t.id,
+            teamName: t.name,
+            seed: t.seed,
+            region: t.region,
+            rank: i + 1,
+          }))
+        );
+        setHasSavedDraft(false);
+        setLastSavedSignature(null);
       } else {
-        setError('Failed to load data.');
+        setLoadError('Failed to load data.');
       }
     } finally {
       setLoading(false);
@@ -81,55 +104,107 @@ export default function RankingPage() {
   };
 
   if (loading) return <p>Loading...</p>;
-  if (error) return <p style={{ color: '#ef4444' }}>{error}</p>;
+  if (loadError) return <p style={{ color: '#ef4444' }}>{loadError}</p>;
 
   const isLocked = submittedAt !== null;
+  const currentSignature = buildRanksSignature(teams);
+  const hasUnsavedChanges = !isLocked && (lastSavedSignature === null || currentSignature !== lastSavedSignature);
+  const submitDisabled = !hasSavedDraft || isSaving || isSubmitting;
+  const submitBtnStyle: React.CSSProperties = {
+    ...btnStyle,
+    background: submitDisabled ? '#94a3b8' : 'var(--orange)',
+    borderColor: submitDisabled ? '#94a3b8' : 'var(--border)',
+    color: submitDisabled ? '#e2e8f0' : '#0f172a',
+    cursor: submitDisabled ? 'not-allowed' : 'pointer',
+    opacity: submitDisabled ? 0.85 : 1,
+  };
 
   return (
     <div>
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '1rem',
-      }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '1rem',
+        }}
+      >
         <h1 style={{ margin: 0 }}>My Rankings</h1>
         {isLocked && (
-          <span style={{
-            background: 'var(--navy)',
-            color: 'var(--orange)',
-            padding: '0.3rem 0.75rem',
-            borderRadius: '4px',
-            fontSize: '0.85rem',
-            fontWeight: 600,
-          }}>
+          <span
+            style={{
+              background: 'var(--navy)',
+              color: 'var(--orange)',
+              padding: '0.3rem 0.75rem',
+              borderRadius: '4px',
+              fontSize: '0.85rem',
+              fontWeight: 600,
+            }}
+          >
             Submitted
           </span>
         )}
       </div>
 
       {!isLocked && (
-        <div style={{
-          display: 'flex',
-          gap: '0.75rem',
-          marginBottom: '1rem',
-        }}>
-          <button onClick={handleSave} style={btnStyle}>Save Draft</button>
-          <button onClick={handleSubmit} style={{ ...btnStyle, background: 'var(--orange)' }}>
-            Submit Entry
+        <div
+          style={{
+            display: 'flex',
+            gap: '0.75rem',
+            marginBottom: '1rem',
+          }}
+        >
+          <button onClick={handleSave} style={btnStyle} disabled={isSaving || isSubmitting}>
+            {isSaving ? 'Saving...' : 'Save Draft'}
+          </button>
+          <button
+            onClick={handleSubmit}
+            style={submitBtnStyle}
+            disabled={submitDisabled}
+            title={!hasSavedDraft ? 'Save your bracket first to enable submit.' : undefined}
+          >
+            {isSubmitting ? 'Submitting...' : 'Submit Entry'}
           </button>
         </div>
       )}
 
-      <div style={{
-        display: 'flex',
-        padding: '0.5rem 1rem',
-        fontSize: '0.75rem',
-        color: '#64748b',
-        fontWeight: 600,
-        textTransform: 'uppercase',
-        letterSpacing: '0.5px',
-      }}>
+      {actionMessage && (
+        <p
+          style={{
+            marginTop: 0,
+            marginBottom: '1rem',
+            color: actionMessageType === 'error' ? '#ef4444' : '#16a34a',
+            fontWeight: 600,
+          }}
+        >
+          {actionMessage}
+        </p>
+      )}
+
+      {!isLocked && (
+        <p
+          style={{
+            marginTop: 0,
+            marginBottom: '1rem',
+            color: hasUnsavedChanges ? '#f59e0b' : '#16a34a',
+            fontWeight: 600,
+          }}
+        >
+          {hasUnsavedChanges ? 'Unsaved changes. Save draft to keep your latest ranking.' : 'All changes saved.'}
+        </p>
+      )}
+
+      <div
+        style={{
+          display: 'flex',
+          padding: '0.5rem 1rem',
+          fontSize: '0.75rem',
+          color: '#64748b',
+          fontWeight: 600,
+          textTransform: 'uppercase',
+          letterSpacing: '0.5px',
+        }}
+      >
         <span style={{ width: '50px' }}>Rank</span>
         <span style={{ flex: 1 }}>Team</span>
         <span style={{ width: '60px', textAlign: 'center' }}>Seed</span>
@@ -142,7 +217,7 @@ export default function RankingPage() {
         onDragEnd={handleDragEnd}
         modifiers={[restrictToVerticalAxis]}
       >
-        <SortableContext items={teams.map(t => t.teamId)} strategy={verticalListSortingStrategy}>
+        <SortableContext items={teams.map((t) => t.teamId)} strategy={verticalListSortingStrategy}>
           {teams.map((team) => (
             <SortableTeamRow
               key={team.teamId}
@@ -160,29 +235,51 @@ export default function RankingPage() {
   );
 
   async function handleSave() {
+    setIsSaving(true);
     try {
-      setError('');
+      setActionMessage('');
+      setActionMessageType('');
+
       const payload = {
-        ranks: teams.map(t => ({ teamId: t.teamId, rank: t.rank })),
+        ranks: teams.map((t) => ({ teamId: t.teamId, rank: t.rank })),
       };
+
       const res = await apiClient.put<EntryResponse>('/bracketentry/me/ranks', payload);
-      setTeams(res.data.ranks.sort((a, b) => a.rank - b.rank));
+      const sortedRanks = res.data.ranks.sort((a, b) => a.rank - b.rank);
+      setTeams(sortedRanks);
       setSubmittedAt(res.data.submittedAt);
+      setHasSavedDraft(true);
+      setLastSavedSignature(buildRanksSignature(sortedRanks));
+      setActionMessage('Draft saved successfully.');
+      setActionMessageType('success');
     } catch (err: any) {
-      const errors = err.response?.data?.errors;
-      setError(Array.isArray(errors) ? errors.join(' ') : 'Save failed.');
+      const errors = err.response?.data?.errors ?? err.response?.data?.Errors;
+      setActionMessage(Array.isArray(errors) ? errors.join(' ') : 'Save failed.');
+      setActionMessageType('error');
+    } finally {
+      setIsSaving(false);
     }
   }
 
   async function handleSubmit() {
+    if (!hasSavedDraft) return;
+
+    setIsSubmitting(true);
     try {
-      setError('');
+      setActionMessage('');
+      setActionMessageType('');
+
       const res = await apiClient.post<EntryResponse>('/bracketentry/me/submit');
       setTeams(res.data.ranks.sort((a, b) => a.rank - b.rank));
       setSubmittedAt(res.data.submittedAt);
+      setActionMessage('Entry submitted successfully.');
+      setActionMessageType('success');
     } catch (err: any) {
-      const errors = err.response?.data?.errors;
-      setError(Array.isArray(errors) ? errors.join(' ') : 'Submit failed.');
+      const errors = err.response?.data?.errors ?? err.response?.data?.Errors;
+      setActionMessage(Array.isArray(errors) ? errors.join(' ') : 'Submit failed.');
+      setActionMessageType('error');
+    } finally {
+      setIsSubmitting(false);
     }
   }
 }
