@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using RSMadnessEngine.Api.BackgroundJobs;
 using RSMadnessEngine.Api.Services;
+using RSMadnessEngine.Api.Services.BracketEntries;
+using RSMadnessEngine.Api.Services.BracketEntries.Repositories;
 using RSMadnessEngine.Data;
 using RSMadnessEngine.Data.Entities;
 using RSMadnessEngine.Data.Seed;
@@ -18,6 +20,10 @@ builder.Services.AddIdentityCore<AppUser>(options =>
 {
     options.User.RequireUniqueEmail = true;
 }).AddEntityFrameworkStores<AppDbContext>();
+
+// bracket entry
+builder.Services.AddScoped<IBracketEntryService, BracketEntryService>();
+builder.Services.AddScoped<IBracketEntryRepository, BracketEntryRepository>();
 
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IScoringService, ScoringService>();
