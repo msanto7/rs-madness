@@ -36,48 +36,47 @@ namespace RSMadnessEngine.Api.Services.BracketEntries
         /// <returns></returns>
         public async Task<GetBracketEntryResponse> SaveRanksAsync(string userId, SaveRanksRequest request)
         {
-            //// make sure bracket ranking is valid
-            //var errors = ValidateRanks(request.Ranks);
-            //if (errors.Any())
-            //{
-            //    return BadRequest(new { Errors = errors });
-            //}
+            // make sure bracket ranking is valid
+            var errors = ValidateRanks(request.Ranks);
+            if (errors.Any())
+            {
+                throw new ApiValidationException("invalid-bracket-ranks", "Bracket entry is invalid.", errors);
+            }
 
-            //var bracketEntry = await _bracketEntryRepository.GetByUserIdWithRanksAsync(userId);
+            var bracketEntry = await _bracketEntryRepository.GetByUserIdWithRanksAsync(userId);
 
-            //// make sure we haven't locked in the bracket yet
-            //if (bracketEntry != null && bracketEntry.SubmittedAt != null)
-            //{
-            //    return BadRequest("Bracket entry has already been submitted and cannot be modified.");
-            //}
+            // make sure we haven't locked in the bracket yet
+            if (bracketEntry != null && bracketEntry.SubmittedAt != null)
+            {
+                throw new ApiValidationException("bracket-entry-locked", "Bracket entry has already been submitted and cannot be modified.", errors);
+            }
 
-            //// add a new entry if the user has not made one yet
-            //if (bracketEntry == null)
-            //{
-            //    bracketEntry = new BracketEntry
-            //    {
-            //        UserId = userId,
-            //        CreatedAt = DateTime.UtcNow
-            //    };
-            //    _dbContext.BracketEntries.Add(bracketEntry);
-            //}
+            // add a new entry if the user has not made one yet
+            if (bracketEntry == null)
+            {
+                bracketEntry = new BracketEntry
+                {
+                    UserId = userId,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _bracketEntryRepository.Add(bracketEntry);
+            }
 
-            //// overwrite the existing bracket state
-            //bracketEntry.EntryTeamRanks.Clear();
-            //foreach (var rank in request.Ranks)
-            //{
-            //    bracketEntry.EntryTeamRanks.Add(new BracketEntryTeamRank
-            //    {
-            //        TeamId = rank.TeamId,
-            //        Rank = rank.Rank
-            //    });
-            //}
-            //await _dbContext.SaveChangesAsync();
+            // overwrite the existing bracket state
+            bracketEntry.EntryTeamRanks.Clear();
+            foreach (var rank in request.Ranks)
+            {
+                bracketEntry.EntryTeamRanks.Add(new BracketEntryTeamRank
+                {
+                    TeamId = rank.TeamId,
+                    Rank = rank.Rank
+                });
+            }
+            await _bracketEntryRepository.SaveChangesAsync();
 
-            //// return a full new copy of the bracket entry state
-            //var response = await _bracketEntryService.GetMyBracketEntryAsync(userId);
-
-            return null;
+            // return a full new copy of the bracket entry state
+            var response = await _bracketEntryRepository.GetResponseByUserIdAsync(userId);
+            return response ?? throw new ApiNotFoundException("bracket-entry-not-found", "Bracket entry not found.");
         }
 
         public async Task<GetBracketEntryResponse> SubmitAsync(string userId)

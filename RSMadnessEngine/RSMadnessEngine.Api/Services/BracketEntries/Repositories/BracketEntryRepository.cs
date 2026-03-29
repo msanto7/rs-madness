@@ -47,11 +47,19 @@ namespace RSMadnessEngine.Api.Services.BracketEntries.Repositories
                 .FirstOrDefaultAsync(be => be.UserId == userId);
         }
 
+        /// <summary>
+        /// Adds a bracket entry record to the db context.
+        /// </summary>
+        /// <param name="bracketEntry"></param>
         public void Add(BracketEntry bracketEntry)
         {
             _dbContext.BracketEntries.Add(bracketEntry);
         }
 
+        /// <summary>
+        /// Saves all db context changes.
+        /// </summary>
+        /// <returns></returns>
         public async Task SaveChangesAsync()
         {
             await _dbContext.SaveChangesAsync();

@@ -50,9 +50,7 @@ namespace RSMadnessEngine.Api.Controllers
         [HttpPut("me/ranks")]
         public async Task<ActionResult<GetBracketEntryResponse>> SaveRanks(SaveRanksRequest request)
         {
-            var userId = GetUserId();
-            var result = await _bracketEntryService.SaveRanksAsync(userId, request);            
-
+            var result = await _bracketEntryService.SaveRanksAsync(GetUserId(), request);
             return Ok(result);
         }
 
