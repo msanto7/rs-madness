@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using RSMadnessEngine.Api.BackgroundJobs;
+using RSMadnessEngine.Api.Middleware;
 using RSMadnessEngine.Api.Services;
 using RSMadnessEngine.Api.Services.BracketEntries;
 using RSMadnessEngine.Api.Services.BracketEntries.Repositories;
@@ -20,6 +21,8 @@ builder.Services.AddIdentityCore<AppUser>(options =>
 {
     options.User.RequireUniqueEmail = true;
 }).AddEntityFrameworkStores<AppDbContext>();
+
+builder.Services.AddProblemDetails();
 
 // bracket entry
 builder.Services.AddScoped<IBracketEntryService, BracketEntryService>();
@@ -67,6 +70,8 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+app.UseMiddleware<ApiExceptionMiddleware>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
