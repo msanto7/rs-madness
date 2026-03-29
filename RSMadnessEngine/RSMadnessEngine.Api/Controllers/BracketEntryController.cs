@@ -22,13 +22,11 @@ namespace RSMadnessEngine.Api.Controllers
         private readonly AppDbContext _dbContext;
         private string GetUserId() => User.FindFirstValue(JwtRegisteredClaimNames.Sub)!;
         private readonly IBracketEntryService _bracketEntryService;
-        private readonly IScoringService _scoringService;
 
-        public BracketEntryController(AppDbContext dbContext, IBracketEntryService bracketEntryService, IScoringService scoringService)
+        public BracketEntryController(AppDbContext dbContext, IBracketEntryService bracketEntryService)
         {
             _dbContext = dbContext;
             _bracketEntryService = bracketEntryService;
-            _scoringService = scoringService;
         }        
 
         /// <summary>
@@ -50,57 +48,19 @@ namespace RSMadnessEngine.Api.Controllers
         [HttpPut("me/ranks")]
         public async Task<ActionResult<GetBracketEntryResponse>> SaveRanks(SaveRanksRequest request)
         {
-            var result = await _bracketEntryService.SaveRanksAsync(GetUserId(), request);
-            return Ok(result);
+            var response = await _bracketEntryService.SaveRanksAsync(GetUserId(), request);
+            return Ok(response);
         }
 
         /// <summary>
         /// Locks the bracket entry for the logged in user.
         /// </summary>
         /// <returns>GetBracketEntryResponse object</returns>
-        //[HttpPost("me/submit")]
-        //public async Task<ActionResult<GetBracketEntryResponse>> Submit()
-        //{
-        //    var userId = GetUserId();
-
-        //    var bracketEntry = await _dbContext.BracketEntries
-        //        .Include(be => be.EntryTeamRanks)
-        //        .FirstOrDefaultAsync(be => be.UserId == userId);
-
-        //    if (bracketEntry == null)
-        //    {
-        //        return NotFound(new { errors = new[] { "No bracket entry found. Save your rankings first." } });
-        //    }
-
-        //    if (bracketEntry.SubmittedAt != null)
-        //    {
-        //        return BadRequest(new { errors = new[] { "Bracket Entry already locked in." } });
-        //    }
-
-        //    var ranks = bracketEntry.EntryTeamRanks
-        //        .OrderBy(r => r.Rank)
-        //        .Select(r => new RankAssignment
-        //        {
-        //            TeamId = r.TeamId,
-        //            Rank = r.Rank
-        //        }).ToList();
-
-        //    var errors = ValidateRanks(ranks);
-        //    if (errors.Any())
-        //    {
-        //        return BadRequest(new { Errors = errors });
-        //    }
-
-        //    bracketEntry.SubmittedAt = DateTime.UtcNow;
-        //    await _dbContext.SaveChangesAsync();
-
-        //    // calculate score for the current bracket
-        //    await _scoringService.CalculatecoreAsync(bracketEntry);
-
-        //    // return fresh response
-        //    var response = await _bracketEntryService.GetMyBracketEntryAsync(userId);
-
-        //    return Ok(response);
-        //}
+        [HttpPost("me/submit")]
+        public async Task<ActionResult<GetBracketEntryResponse>> Submit()
+        {
+            var response = await _bracketEntryService.SubmitAsync(GetUserId());
+            return Ok(response);
+        }
     }
 }

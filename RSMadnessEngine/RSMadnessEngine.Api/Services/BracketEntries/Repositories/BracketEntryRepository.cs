@@ -40,6 +40,11 @@ namespace RSMadnessEngine.Api.Services.BracketEntries.Repositories
                 }).FirstOrDefaultAsync();
         }
 
+        /// <summary>
+        /// Gets the bracket entry with ranks for the requested user.
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <returns></returns>
         public async Task<BracketEntry?> GetByUserIdWithRanksAsync(string userId)
         {
             return await _dbContext.BracketEntries

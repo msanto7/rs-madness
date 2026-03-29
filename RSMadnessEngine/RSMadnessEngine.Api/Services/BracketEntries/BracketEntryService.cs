@@ -48,7 +48,7 @@ namespace RSMadnessEngine.Api.Services.BracketEntries
             // make sure we haven't locked in the bracket yet
             if (bracketEntry != null && bracketEntry.SubmittedAt != null)
             {
-                throw new ApiValidationException("bracket-entry-locked", "Bracket entry has already been submitted and cannot be modified.", errors);
+                throw new ApiConflictException("bracket-entry-locked", "Bracket entry has already been submitted and cannot be modified.");
             }
 
             // add a new entry if the user has not made one yet
@@ -79,9 +79,51 @@ namespace RSMadnessEngine.Api.Services.BracketEntries
             return response ?? throw new ApiNotFoundException("bracket-entry-not-found", "Bracket entry not found.");
         }
 
+        /// <summary>
+        /// Locks the bracket entry for the logged in user.
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        /// <exception cref="ApiNotFoundException"></exception>
+        /// <exception cref="ApiConflictException"></exception>
+        /// <exception cref="ApiValidationException"></exception>
         public async Task<GetBracketEntryResponse> SubmitAsync(string userId)
         {
-            throw new NotImplementedException();
+            var bracketEntry = await _bracketEntryRepository.GetByUserIdWithRanksAsync(userId);
+
+            if (bracketEntry == null)
+            {
+                throw new ApiNotFoundException("bracket-entry-not-found", "No bracket entry found. Save your rankings first.");
+            }
+
+            if (bracketEntry.SubmittedAt != null)
+            {
+                throw new ApiConflictException("bracket-entry-locked", "Bracket entry has already been submitted and cannot be modified.");
+            }
+
+            var ranks = bracketEntry.EntryTeamRanks
+                .OrderBy(r => r.Rank)
+                .Select(r => new RankAssignment
+                {
+                    TeamId = r.TeamId,
+                    Rank = r.Rank
+                }).ToList();
+
+            var errors = ValidateRanks(ranks);
+            if (errors.Any())
+            {
+                throw new ApiValidationException("invalid-bracket-ranks", "Bracket entry is invalid.", errors);
+            }
+
+            bracketEntry.SubmittedAt = DateTime.UtcNow;
+            await _bracketEntryRepository.SaveChangesAsync();
+
+            // calculate score for the current bracket
+            await _scoringService.CalculatecoreAsync(bracketEntry);
+
+            // return fresh response
+            var response = await _bracketEntryRepository.GetResponseByUserIdAsync(userId);
+            return response ?? throw new ApiNotFoundException("bracket-entry-not-found", "Submitted bracket could not be loaded.");
         }
 
         /// <summary>
