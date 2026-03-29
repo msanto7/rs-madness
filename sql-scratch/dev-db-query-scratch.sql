@@ -6,7 +6,7 @@ select * from "BracketEntries"
 
 update "BracketEntries"
 set "SubmittedAt" = null
-where "Id" = 1
+where "Id" = 9
 
 delete from "BracketEntries"
 where "Id" = 1
@@ -36,6 +36,7 @@ select *
 from "Teams" t
         inner join "TeamStatuses" ts ON ts."TeamId" = t."Id"
 where "IsAlive" = false
+
 
 
 
