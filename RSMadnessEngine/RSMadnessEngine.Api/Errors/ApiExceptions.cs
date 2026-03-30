@@ -38,4 +38,10 @@ namespace RSMadnessEngine.Api.Errors
         public ApiConflictException(string errorCode, string detail)
             : base(StatusCodes.Status409Conflict, errorCode, detail) { }
     }
+
+    public sealed class ApiUnauthorizedException : ApiException
+    {
+        public ApiUnauthorizedException(string errorCode, string detail)
+            : base(StatusCodes.Status401Unauthorized, errorCode, detail) { }
+    }
 }

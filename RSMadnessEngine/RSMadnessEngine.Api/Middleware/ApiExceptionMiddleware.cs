@@ -79,6 +79,7 @@ namespace RSMadnessEngine.Api.Middleware
 
         private static string TitleFor(int statusCode) => statusCode switch
         {
+            StatusCodes.Status401Unauthorized => "Unauthorized",
             StatusCodes.Status400BadRequest => "Bad Request",
             StatusCodes.Status404NotFound => "Not Found",
             StatusCodes.Status409Conflict => "Conflict",
