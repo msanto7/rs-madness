@@ -2,7 +2,16 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using RSMadnessEngine.Api.BackgroundJobs;
+using RSMadnessEngine.Api.Middleware;
 using RSMadnessEngine.Api.Services;
+using RSMadnessEngine.Api.Services.Auth;
+using RSMadnessEngine.Api.Services.Auth.Repositories;
+using RSMadnessEngine.Api.Services.BracketEntries;
+using RSMadnessEngine.Api.Services.BracketEntries.Repositories;
+using RSMadnessEngine.Api.Services.Leaderboard;
+using RSMadnessEngine.Api.Services.Leaderboard.Repositories;
+using RSMadnessEngine.Api.Services.Teams;
+using RSMadnessEngine.Api.Services.Teams.Repositories;
 using RSMadnessEngine.Data;
 using RSMadnessEngine.Data.Entities;
 using RSMadnessEngine.Data.Seed;
@@ -18,6 +27,19 @@ builder.Services.AddIdentityCore<AppUser>(options =>
 {
     options.User.RequireUniqueEmail = true;
 }).AddEntityFrameworkStores<AppDbContext>();
+
+builder.Services.AddProblemDetails();
+
+// bracket entry
+builder.Services.AddScoped<IBracketEntryService, BracketEntryService>();
+builder.Services.AddScoped<IBracketEntryRepository, BracketEntryRepository>();
+
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<ITeamsService, TeamsService>();
+builder.Services.AddScoped<ITeamsRepository, TeamsRepository>();
+builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
+builder.Services.AddScoped<ILeaderboardRepository, LeaderboardRepository>();
 
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IScoringService, ScoringService>();
@@ -61,6 +83,8 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+app.UseMiddleware<ApiExceptionMiddleware>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

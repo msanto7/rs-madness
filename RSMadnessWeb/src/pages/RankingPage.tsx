@@ -5,6 +5,7 @@ import { SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinat
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import SortableTeamRow from '../components/SortableTeamRow';
 import apiClient from '../api/client';
+import { getApiErrorMessages, getApiErrorStatus } from '../api/errors';
 
 interface TeamRank {
   teamId: number;
@@ -80,9 +81,8 @@ export default function RankingPage() {
       setTeams(sortedRanks);
       setHasSavedDraft(true);
       setLastSavedSignature(buildRanksSignature(sortedRanks));
-    } catch (err: any) {
-      if (err.response?.status === 404) {
-        // No entry yet - load fresh teams and assign default ranks
+    } catch (err: unknown) {
+      if (getApiErrorStatus(err) === 404) {
         const teamsRes = await apiClient.get<Team[]>('/teams');
         setTeams(
           teamsRes.data.map((t, i) => ({
@@ -96,7 +96,7 @@ export default function RankingPage() {
         setHasSavedDraft(false);
         setLastSavedSignature(null);
       } else {
-        setLoadError('Failed to load data.');
+        setLoadError(getApiErrorMessages(err, 'Failed to load data.')[0]);
       }
     } finally {
       setLoading(false);
@@ -252,9 +252,8 @@ export default function RankingPage() {
       setLastSavedSignature(buildRanksSignature(sortedRanks));
       setActionMessage('Draft saved successfully.');
       setActionMessageType('success');
-    } catch (err: any) {
-      const errors = err.response?.data?.errors ?? err.response?.data?.Errors;
-      setActionMessage(Array.isArray(errors) ? errors.join(' ') : 'Save failed.');
+    } catch (err: unknown) {
+      setActionMessage(getApiErrorMessages(err, 'Save failed.').join(' '));
       setActionMessageType('error');
     } finally {
       setIsSaving(false);
@@ -274,9 +273,8 @@ export default function RankingPage() {
       setSubmittedAt(res.data.submittedAt);
       setActionMessage('Entry submitted successfully.');
       setActionMessageType('success');
-    } catch (err: any) {
-      const errors = err.response?.data?.errors ?? err.response?.data?.Errors;
-      setActionMessage(Array.isArray(errors) ? errors.join(' ') : 'Submit failed.');
+    } catch (err: unknown) {
+      setActionMessage(getApiErrorMessages(err, 'Submit failed.').join(' '));
       setActionMessageType('error');
     } finally {
       setIsSubmitting(false);

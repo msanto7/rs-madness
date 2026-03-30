@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import apiClient from '../api/client';
+import { onAuthExpired } from '../auth/sessionEvents';
 
 // types
 interface User {
@@ -25,7 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         const token = localStorage.getItem('token');
-        
+
         // no token
         if (!token) {
             setLoading(false);
@@ -37,6 +38,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .then(res => setUser(res.data))
             .catch(() => localStorage.removeItem('token'))
             .finally(() => setLoading(false));
+    }, []);
+
+    useEffect(() => {
+        return onAuthExpired(() => {
+            localStorage.removeItem('token');
+            setUser(null);
+        });
     }, []);
 
     // login

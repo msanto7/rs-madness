@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useAuth } from '../hooks/useAuth';
 import './AuthPages.css';
+import { getApiErrorMessages } from '../api/errors';
 
 export default function RegisterPage() {
   const [displayName, setDisplayName] = useState('');
@@ -28,15 +29,8 @@ export default function RegisterPage() {
     try {
       await register(email, password, displayName);
       navigate('/ranking');
-    } catch (err: any) {
-      const data = err.response?.data;
-      if (Array.isArray(data)) {
-        setErrors(data.map((e: any) => e.description));
-      } else if (data?.errors) {
-        setErrors(Object.values(data.errors).flat() as string[]);
-      } else {
-        setErrors([data?.error ?? data ?? 'Registration failed']);
-      }
+    } catch (err: unknown) {
+      setErrors(getApiErrorMessages(err, 'Registration failed'));
     } finally {
       setIsSubmitting(false);
     }

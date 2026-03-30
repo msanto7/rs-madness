@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useAuth } from '../hooks/useAuth';
 import './AuthPages.css';
+import { getApiErrorMessages } from '../api/errors';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -21,15 +22,8 @@ export default function LoginPage() {
     try {
       await login(email, password);
       navigate('/ranking');
-    } catch (err: any) {
-      const data = err.response?.data;
-
-      if (data?.errors) {
-        const messages = Object.values(data.errors).flat().join(' ');
-        setError(messages);
-      } else {
-        setError(data?.error ?? data ?? 'Login failed');
-      }
+    } catch (err: unknown) {
+      setError(getApiErrorMessages(err, 'Login failed').join(' '));
     } finally {
       setIsSubmitting(false);
     }

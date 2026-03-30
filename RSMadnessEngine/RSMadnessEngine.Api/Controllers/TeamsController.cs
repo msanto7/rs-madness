@@ -1,43 +1,29 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RSMadnessEngine.Api.DTOs;
-using RSMadnessEngine.Data;
-using Microsoft.EntityFrameworkCore;
+using RSMadnessEngine.Api.Services.Teams;
 
 namespace RSMadnessEngine.Api.Controllers
 {
-
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
     public class TeamsController : ControllerBase
     {
-        private readonly AppDbContext _dbContext;
+        private readonly ITeamsService _teamsService;
 
-        public TeamsController(AppDbContext dbContext)
+        public TeamsController(ITeamsService teamsService)
         {
-            _dbContext = dbContext;
+            _teamsService = teamsService;
         }
 
         /// <summary>
-        /// Gets all teams
+        /// Gets all teams.
         /// </summary>
-        /// <returns>List<GetTeamsResponse> objects</returns>
         [HttpGet]
         public async Task<ActionResult<List<GetTeamsResponse>>> GetAll()
         {
-            var teams = await _dbContext.Teams
-                .OrderBy(t => t.Region)
-                .ThenBy(t => t.Seed)
-                .Select(t => new GetTeamsResponse
-                {
-                    Id = t.Id,
-                    Name = t.Name,
-                    Seed = t.Seed,
-                    Region = t.Region
-                })
-                .ToListAsync();
-
+            var teams = await _teamsService.GetAllAsync();
             return Ok(teams);
         }
     }
