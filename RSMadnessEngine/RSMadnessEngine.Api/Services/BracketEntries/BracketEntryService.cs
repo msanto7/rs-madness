@@ -1,4 +1,3 @@
-﻿using Microsoft.EntityFrameworkCore;
 using RSMadnessEngine.Api.DTOs.BracketEntry;
 using RSMadnessEngine.Api.Errors;
 using RSMadnessEngine.Api.Services.BracketEntries.Repositories;
@@ -18,22 +17,17 @@ namespace RSMadnessEngine.Api.Services.BracketEntries
         }
 
         /// <summary>
-        /// Calls repo method to get the bracket entry for the requested user.
+        /// Gets the bracket entry for the requested user.
         /// </summary>
-        /// <param name="userId"></param>
-        /// <returns></returns>
-        public async Task<GetBracketEntryResponse?> GetMyBracketEntryAsync(string userId)
+        public async Task<GetBracketEntryResponse> GetMyBracketEntryAsync(string userId)
         {
             var response = await _bracketEntryRepository.GetResponseByUserIdAsync(userId);
             return response ?? throw new ApiNotFoundException("bracket-entry-not-found", "Bracket entry not found.");
         }
 
         /// <summary>
-        /// Creates or Updates a bracket entry for the requested user.
+        /// Creates or updates a bracket entry for the requested user.
         /// </summary>
-        /// <param name="userId"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
         public async Task<GetBracketEntryResponse> SaveRanksAsync(string userId, SaveRanksRequest request)
         {
             // make sure bracket ranking is valid
@@ -72,6 +66,7 @@ namespace RSMadnessEngine.Api.Services.BracketEntries
                     Rank = rank.Rank
                 });
             }
+
             await _bracketEntryRepository.SaveChangesAsync();
 
             // return a full new copy of the bracket entry state
@@ -80,17 +75,11 @@ namespace RSMadnessEngine.Api.Services.BracketEntries
         }
 
         /// <summary>
-        /// Locks the bracket entry for the logged in user.
+        /// Locks the bracket entry for the logged-in user.
         /// </summary>
-        /// <param name="userId"></param>
-        /// <returns></returns>
-        /// <exception cref="ApiNotFoundException"></exception>
-        /// <exception cref="ApiConflictException"></exception>
-        /// <exception cref="ApiValidationException"></exception>
         public async Task<GetBracketEntryResponse> SubmitAsync(string userId)
         {
             var bracketEntry = await _bracketEntryRepository.GetByUserIdWithRanksAsync(userId);
-
             if (bracketEntry == null)
             {
                 throw new ApiNotFoundException("bracket-entry-not-found", "No bracket entry found. Save your rankings first.");
@@ -127,10 +116,8 @@ namespace RSMadnessEngine.Api.Services.BracketEntries
         }
 
         /// <summary>
-        /// Method to validate the bracket ranking rules before saving
+        /// Validates bracket ranking rules before saving or submitting.
         /// </summary>
-        /// <param name="ranks"></param>
-        /// <returns></returns>
         private static List<string> ValidateRanks(List<RankAssignment> ranks)
         {
             var errors = new List<string>();
