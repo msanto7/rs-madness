@@ -50,7 +50,9 @@ public class AuthService : IAuthService
                 result.Errors.Select(e => e.Description));
         }
 
-        return await BuildAuthSessionResponseAsync(user);
+        var response = await BuildAuthSessionResponseAsync(user);
+        await _refreshTokenRepository.SaveChangesAsync();
+        return response;
     }
 
     public async Task<AuthSessionResponse> LoginAsync(LoginRequest request)
@@ -68,7 +70,9 @@ public class AuthService : IAuthService
             throw new ApiUnauthorizedException("invalid-credentials", "Invalid email or password.");
         }
 
-        return await BuildAuthSessionResponseAsync(user);
+        var response = await BuildAuthSessionResponseAsync(user);
+        await _refreshTokenRepository.SaveChangesAsync();
+        return response;
     }
 
     public async Task<AuthSessionResponse> RefreshAsync(string refreshToken)
@@ -150,7 +154,6 @@ public class AuthService : IAuthService
             LastUsedAt = lastUsedAt,
             ExpiresAt = absoluteSessionExpiresAt
         });
-        await _refreshTokenRepository.SaveChangesAsync();
 
         return new AuthSessionResponse
         {

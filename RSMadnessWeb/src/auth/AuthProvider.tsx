@@ -38,18 +38,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const logout = useCallback(async () => {
         try {
             await apiClient.post('/auth/logout');
-        } finally {
-            setUser(null);
+        } catch {
+            // best-effort: clear local session state below even if the request fails
         }
+        setUser(null);
     }, []);
 
     useEffect(() => {
         if (!user) return;
 
-        let idleTimer: number;
+        let idleTimer: ReturnType<typeof window.setTimeout> | undefined;
 
         const resetIdleTimer = () => {
-            window.clearTimeout(idleTimer);
+            if (idleTimer !== undefined) window.clearTimeout(idleTimer);
             idleTimer = window.setTimeout(() => {
                 void logout();
             }, idleLogoutMs);
@@ -59,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         activityEvents.forEach((eventName) => window.addEventListener(eventName, resetIdleTimer, { passive: true }));
 
         return () => {
-            window.clearTimeout(idleTimer);
+            if (idleTimer !== undefined) window.clearTimeout(idleTimer);
             activityEvents.forEach((eventName) => window.removeEventListener(eventName, resetIdleTimer));
         };
     }, [logout, user]);
