@@ -8,15 +8,23 @@ namespace RSMadnessEngine.Api.Services.Auth;
 public class AuthService : IAuthService
 {
     private readonly IAuthRepository _authRepository;
+    private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly ITokenService _tokenService;
+    private readonly IConfiguration _config;
 
-    public AuthService(IAuthRepository authRepository, ITokenService tokenService)
+    public AuthService(
+        IAuthRepository authRepository,
+        IRefreshTokenRepository refreshTokenRepository,
+        ITokenService tokenService,
+        IConfiguration config)
     {
         _authRepository = authRepository;
+        _refreshTokenRepository = refreshTokenRepository;
         _tokenService = tokenService;
+        _config = config;
     }
 
-    public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
+    public async Task<AuthSessionResponse> RegisterAsync(RegisterRequest request)
     {
         // validate if the email exists already
         var existingUser = await _authRepository.FindByEmailAsync(request.Email);
@@ -42,10 +50,10 @@ public class AuthService : IAuthService
                 result.Errors.Select(e => e.Description));
         }
 
-        return BuildAuthResponse(user);
+        return await BuildAuthSessionResponseAsync(user);
     }
 
-    public async Task<AuthResponse> LoginAsync(LoginRequest request)
+    public async Task<AuthSessionResponse> LoginAsync(LoginRequest request)
     {
         var user = await _authRepository.FindByEmailAsync(request.Email);
         if (user == null)
@@ -60,7 +68,48 @@ public class AuthService : IAuthService
             throw new ApiUnauthorizedException("invalid-credentials", "Invalid email or password.");
         }
 
-        return BuildAuthResponse(user);
+        return await BuildAuthSessionResponseAsync(user);
+    }
+
+    public async Task<AuthSessionResponse> RefreshAsync(string refreshToken)
+    {
+        var tokenHash = _tokenService.HashRefreshToken(refreshToken);
+        var existingToken = await _refreshTokenRepository.FindByTokenHashAsync(tokenHash);
+
+        if (existingToken?.User == null || !existingToken.IsActive)
+        {
+            throw new ApiUnauthorizedException("invalid-refresh-token", "Session has expired.");
+        }
+
+        if (IsSessionExpired(existingToken))
+        {
+            existingToken.RevokedAt = DateTime.UtcNow;
+            await _refreshTokenRepository.SaveChangesAsync();
+            throw new ApiUnauthorizedException("invalid-refresh-token", "Session has expired.");
+        }
+
+        var now = DateTime.UtcNow;
+        var response = await BuildAuthSessionResponseAsync(existingToken.User, existingToken.SessionCreatedAt, now);
+        existingToken.RevokedAt = DateTime.UtcNow;
+        existingToken.LastUsedAt = now;
+        existingToken.ReplacedByTokenHash = _tokenService.HashRefreshToken(response.RefreshToken);
+        await _refreshTokenRepository.SaveChangesAsync();
+
+        return response;
+    }
+
+    public async Task LogoutAsync(string refreshToken)
+    {
+        var tokenHash = _tokenService.HashRefreshToken(refreshToken);
+        var existingToken = await _refreshTokenRepository.FindByTokenHashAsync(tokenHash);
+
+        if (existingToken == null || existingToken.RevokedAt != null)
+        {
+            return;
+        }
+
+        existingToken.RevokedAt = DateTime.UtcNow;
+        await _refreshTokenRepository.SaveChangesAsync();
     }
 
     public async Task<CurrentUserResponse> GetCurrentUserAsync(string userId)
@@ -78,15 +127,48 @@ public class AuthService : IAuthService
         };
     }
 
-    private AuthResponse BuildAuthResponse(AppUser user)
+    private async Task<AuthSessionResponse> BuildAuthSessionResponseAsync(AppUser user)
     {
-        var token = _tokenService.GenerateToken(user);
+        var now = DateTime.UtcNow;
 
-        return new AuthResponse
+        return await BuildAuthSessionResponseAsync(user, now, now);
+    }
+
+    private async Task<AuthSessionResponse> BuildAuthSessionResponseAsync(AppUser user, DateTime sessionCreatedAt, DateTime lastUsedAt)
+    {
+        var accessToken = _tokenService.GenerateAccessToken(user);
+        var refreshToken = _tokenService.GenerateRefreshToken();
+        var refreshTokenHash = _tokenService.HashRefreshToken(refreshToken);
+        var absoluteSessionDays = double.Parse(_config["Jwt:AbsoluteSessionExpireDays"] ?? _config["Jwt:RefreshExpireDays"] ?? "14");
+        var absoluteSessionExpiresAt = sessionCreatedAt.AddDays(absoluteSessionDays);
+
+        await _refreshTokenRepository.AddAsync(new RefreshToken
         {
-            Token = token,
+            UserId = user.Id,
+            TokenHash = refreshTokenHash,
+            SessionCreatedAt = sessionCreatedAt,
+            LastUsedAt = lastUsedAt,
+            ExpiresAt = absoluteSessionExpiresAt
+        });
+        await _refreshTokenRepository.SaveChangesAsync();
+
+        return new AuthSessionResponse
+        {
+            AccessToken = accessToken,
+            RefreshToken = refreshToken,
+            RefreshTokenExpiresAt = absoluteSessionExpiresAt,
             DisplayName = user.DisplayName ?? string.Empty,
             Email = user.Email ?? string.Empty
         };
+    }
+
+    private bool IsSessionExpired(RefreshToken refreshToken)
+    {
+        var now = DateTime.UtcNow;
+        var idleTimeoutMinutes = double.Parse(_config["Jwt:IdleSessionTimeoutMinutes"] ?? "60");
+        var absoluteSessionDays = double.Parse(_config["Jwt:AbsoluteSessionExpireDays"] ?? _config["Jwt:RefreshExpireDays"] ?? "14");
+
+        return refreshToken.LastUsedAt.AddMinutes(idleTimeoutMinutes) <= now
+            || refreshToken.SessionCreatedAt.AddDays(absoluteSessionDays) <= now;
     }
 }

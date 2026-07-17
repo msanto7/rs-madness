@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router';
+import { useState } from 'react';
+import { NavLink, Outlet, useNavigate } from 'react-router';
 import { useAuth } from '../hooks/useAuth';
 import './Layout.css';
 
@@ -12,15 +12,11 @@ const navItems = [
 export default function Layout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  useEffect(() => {
+  const handleLogout = async () => {
+    await logout();
     setIsMobileMenuOpen(false);
-  }, [location.pathname]);
-
-  const handleLogout = () => {
-    logout();
     navigate('/login');
   };
 
@@ -38,6 +34,7 @@ export default function Layout() {
               <NavLink
                 key={item.to}
                 to={item.to}
+                onClick={() => setIsMobileMenuOpen(false)}
                 className={({ isActive }) => `top-nav__link ${isActive ? 'top-nav__link--active' : ''}`}
               >
                 {item.label}
@@ -69,6 +66,7 @@ export default function Layout() {
               <NavLink
                 key={item.to}
                 to={item.to}
+                onClick={() => setIsMobileMenuOpen(false)}
                 className={({ isActive }) => `top-nav__link ${isActive ? 'top-nav__link--active' : ''}`}
               >
                 {item.label}

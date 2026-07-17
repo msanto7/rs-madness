@@ -9,7 +9,7 @@ set "SubmittedAt" = null
 where "Id" = 1
 
 delete from "BracketEntries"
-where "Id" = 1
+where "Id" = 6
 
 insert into "BracketEntryScores" ("Id", "BracketEntryId", "CurrentPoints", "PotentialPoints")
 values
