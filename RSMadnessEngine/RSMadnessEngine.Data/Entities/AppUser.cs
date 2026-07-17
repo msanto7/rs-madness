@@ -7,5 +7,7 @@ namespace RSMadnessEngine.Data.Entities
         public string? DisplayName { get; set; }
 
         public BracketEntry? BracketEntry { get; set; }
+
+        public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
     }
 }

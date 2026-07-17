@@ -4,9 +4,13 @@ namespace RSMadnessEngine.Api.Services.Auth;
 
 public interface IAuthService
 {
-    Task<AuthResponse> RegisterAsync(RegisterRequest request);
+    Task<AuthSessionResponse> RegisterAsync(RegisterRequest request);
 
-    Task<AuthResponse> LoginAsync(LoginRequest request);
+    Task<AuthSessionResponse> LoginAsync(LoginRequest request);
+
+    Task<AuthSessionResponse> RefreshAsync(string refreshToken);
+
+    Task LogoutAsync(string refreshToken);
 
     Task<CurrentUserResponse> GetCurrentUserAsync(string userId);
 }

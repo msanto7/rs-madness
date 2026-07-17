@@ -1,4 +1,5 @@
 import axios, { AxiosError } from 'axios';
+import type { InternalAxiosRequestConfig } from 'axios';
 import { emitAuthExpired } from '../auth/sessionEvents';
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5202/api';
@@ -18,6 +19,10 @@ type ProblemDetailsPayload = {
     detail?: string;
     errorCode?: string;
     errors?: string[] | Record<string, string[]>;
+}
+
+type RetriableRequestConfig = InternalAxiosRequestConfig & {
+  _retry?: boolean;
 }
 
 function flattenErrors(value: ProblemDetailsPayload['errors']): string[] {
@@ -42,27 +47,53 @@ function toAppApiError(error: AxiosError): AppApiError {
 // axios calls will use this base URL
 const apiClient = axios.create({
     baseURL: apiBaseUrl,
+    withCredentials: true,
     headers: {
         'Content-Type': 'application/json',
     },
 });
 
-// interceptor for outgoing requests to the API - jwt token attached in header
-apiClient.interceptors.request.use((config => {
-    const token = localStorage.getItem('token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-}));
+// shared across concurrent 401s so a burst of parallel requests rotates the refresh token once, not once per request
+let refreshPromise: Promise<void> | null = null;
+
+function refreshAccessToken(): Promise<void> {
+  if (!refreshPromise) {
+    refreshPromise = apiClient.post('/auth/refresh')
+      .then(() => undefined)
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+
+  return refreshPromise;
+}
 
 apiClient.interceptors.response.use(
   (response) => response,
-  (error: AxiosError) => {
+  async (error: AxiosError) => {
     const apiError = toAppApiError(error);
+    const originalRequest = error.config as RetriableRequestConfig | undefined;
+    const requestUrl = originalRequest?.url ?? '';
 
     if (apiError.status === 401) {
-      localStorage.removeItem('token');
+      const isAuthAction =
+        requestUrl.includes('/auth/login') ||
+        requestUrl.includes('/auth/register') ||
+        requestUrl.includes('/auth/logout') ||
+        requestUrl.includes('/auth/refresh');
+
+      if (originalRequest && !originalRequest._retry && !isAuthAction) {
+        originalRequest._retry = true;
+
+        try {
+          await refreshAccessToken();
+          return apiClient(originalRequest);
+        } catch {
+          emitAuthExpired();
+          return Promise.reject(apiError);
+        }
+      }
+
       emitAuthExpired();
     }
 

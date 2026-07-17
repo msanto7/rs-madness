@@ -4,5 +4,9 @@ namespace RSMadnessEngine.Api.Services;
 
 public interface ITokenService
 {
-    string GenerateToken(AppUser user);
+    string GenerateAccessToken(AppUser user);
+
+    string GenerateRefreshToken();
+
+    string HashRefreshToken(string refreshToken);
 }
