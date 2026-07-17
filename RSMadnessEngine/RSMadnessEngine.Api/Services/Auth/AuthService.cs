@@ -92,11 +92,11 @@ public class AuthService : IAuthService
             throw new ApiUnauthorizedException("invalid-refresh-token", "Session has expired.");
         }
 
-        var now = DateTime.UtcNow;
-        var response = await BuildAuthSessionResponseAsync(existingToken.User, existingToken.SessionCreatedAt, now, existingToken.ExpiresAt);
-        existingToken.RevokedAt = DateTime.UtcNow;
-        existingToken.LastUsedAt = now;
-        existingToken.ReplacedByTokenHash = _tokenService.HashRefreshToken(response.RefreshToken);
+var now = DateTime.UtcNow;
+var response = await BuildAuthSessionResponseAsync(existingToken.User, existingToken.SessionCreatedAt, now, existingToken.ExpiresAt);
+existingToken.RevokedAt = now;
+existingToken.LastUsedAt = now;
+existingToken.ReplacedByTokenHash = _tokenService.HashRefreshToken(response.RefreshToken);
         await _refreshTokenRepository.SaveChangesAsync();
 
         return response;
