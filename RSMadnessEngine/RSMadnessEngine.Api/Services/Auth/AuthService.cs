@@ -93,7 +93,7 @@ public class AuthService : IAuthService
         }
 
         var now = DateTime.UtcNow;
-        var response = await BuildAuthSessionResponseAsync(existingToken.User, existingToken.SessionCreatedAt, now);
+        var response = await BuildAuthSessionResponseAsync(existingToken.User, existingToken.SessionCreatedAt, now, existingToken.ExpiresAt);
         existingToken.RevokedAt = DateTime.UtcNow;
         existingToken.LastUsedAt = now;
         existingToken.ReplacedByTokenHash = _tokenService.HashRefreshToken(response.RefreshToken);
@@ -134,17 +134,20 @@ public class AuthService : IAuthService
     private async Task<AuthSessionResponse> BuildAuthSessionResponseAsync(AppUser user)
     {
         var now = DateTime.UtcNow;
+        var absoluteSessionDays = double.Parse(_config["Jwt:AbsoluteSessionExpireDays"] ?? _config["Jwt:RefreshExpireDays"] ?? "14");
+        var absoluteSessionExpiresAt = now.AddDays(absoluteSessionDays);
 
-        return await BuildAuthSessionResponseAsync(user, now, now);
+        return await BuildAuthSessionResponseAsync(user, now, now, absoluteSessionExpiresAt);
     }
 
-    private async Task<AuthSessionResponse> BuildAuthSessionResponseAsync(AppUser user, DateTime sessionCreatedAt, DateTime lastUsedAt)
+    // absoluteSessionExpiresAt is passed in rather than recomputed from live config so that rotating an
+    // existing session (see RefreshAsync, which passes existingToken.ExpiresAt) preserves the cap that was
+    // set when the session was first created, even if Jwt:AbsoluteSessionExpireDays changes afterward.
+    private async Task<AuthSessionResponse> BuildAuthSessionResponseAsync(AppUser user, DateTime sessionCreatedAt, DateTime lastUsedAt, DateTime absoluteSessionExpiresAt)
     {
         var accessToken = _tokenService.GenerateAccessToken(user);
         var refreshToken = _tokenService.GenerateRefreshToken();
         var refreshTokenHash = _tokenService.HashRefreshToken(refreshToken);
-        var absoluteSessionDays = double.Parse(_config["Jwt:AbsoluteSessionExpireDays"] ?? _config["Jwt:RefreshExpireDays"] ?? "14");
-        var absoluteSessionExpiresAt = sessionCreatedAt.AddDays(absoluteSessionDays);
 
         await _refreshTokenRepository.AddAsync(new RefreshToken
         {
@@ -169,9 +172,8 @@ public class AuthService : IAuthService
     {
         var now = DateTime.UtcNow;
         var idleTimeoutMinutes = double.Parse(_config["Jwt:IdleSessionTimeoutMinutes"] ?? "60");
-        var absoluteSessionDays = double.Parse(_config["Jwt:AbsoluteSessionExpireDays"] ?? _config["Jwt:RefreshExpireDays"] ?? "14");
 
         return refreshToken.LastUsedAt.AddMinutes(idleTimeoutMinutes) <= now
-            || refreshToken.SessionCreatedAt.AddDays(absoluteSessionDays) <= now;
+            || refreshToken.ExpiresAt <= now;
     }
 }

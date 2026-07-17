@@ -109,7 +109,15 @@ namespace RSMadnessEngine.Api.Controllers
         private void SetAuthCookies(AuthSessionResponse response)
         {
             Response.Cookies.Append(AccessTokenCookieName, response.AccessToken, BuildCookieOptions(GetAccessTokenExpiration()));
-            Response.Cookies.Append(RefreshTokenCookieName, response.RefreshToken, BuildCookieOptions(response.RefreshTokenExpiresAt));
+            Response.Cookies.Append(RefreshTokenCookieName, response.RefreshToken, BuildCookieOptions(AsUtcOffset(response.RefreshTokenExpiresAt)));
+        }
+
+        // DateTime -> DateTimeOffset has an implicit conversion, but it trusts DateTime.Kind: Unspecified is
+        // silently treated as local server time. RefreshTokenExpiresAt is always a UTC instant, so pin the
+        // Kind explicitly rather than relying on callers upstream never producing an Unspecified DateTime.
+        private static DateTimeOffset AsUtcOffset(DateTime value)
+        {
+            return new DateTimeOffset(DateTime.SpecifyKind(value, DateTimeKind.Utc));
         }
 
         private void ClearAuthCookies()
