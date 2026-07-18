@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router';
 import apiClient from '../api/client';
 
 interface LeaderboardEntry {
@@ -10,9 +11,13 @@ interface LeaderboardEntry {
 }
 
 export default function LeaderboardPage() {
+  const location = useLocation();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [bannerMessage, setBannerMessage] = useState<string | null>(
+    (location.state as { message?: string } | null)?.message ?? null
+  );
 
   useEffect(() => {
     apiClient.get<LeaderboardEntry[]>('/leaderboard')
@@ -26,6 +31,25 @@ export default function LeaderboardPage() {
 
   return (
     <div>
+      {bannerMessage && (
+        <div
+          onClick={() => setBannerMessage(null)}
+          style={{
+            background: 'var(--navy)',
+            color: 'var(--orange)',
+            padding: '0.75rem 1rem',
+            borderRadius: '6px',
+            marginBottom: '1rem',
+            fontWeight: 600,
+            fontSize: '0.9rem',
+            cursor: 'pointer',
+          }}
+          title="Dismiss"
+        >
+          {bannerMessage}
+        </div>
+      )}
+
       <h1 style={{ marginBottom: '1rem' }}>Leaderboard</h1>
 
       {entries.length === 0 ? (

@@ -2,6 +2,7 @@ using RSMadnessEngine.Api.DTOs.BracketEntry;
 using RSMadnessEngine.Api.Errors;
 using RSMadnessEngine.Api.Services.BracketEntries.Repositories;
 using RSMadnessEngine.Data.Entities;
+using System.Globalization;
 
 namespace RSMadnessEngine.Api.Services.BracketEntries
 {
@@ -9,11 +10,13 @@ namespace RSMadnessEngine.Api.Services.BracketEntries
     {
         private readonly IBracketEntryRepository _bracketEntryRepository;
         private readonly IScoringService _scoringService;
+        private readonly IConfiguration _config;
 
-        public BracketEntryService(IBracketEntryRepository bracketEntryRepository, IScoringService scoringService)
+        public BracketEntryService(IBracketEntryRepository bracketEntryRepository, IScoringService scoringService, IConfiguration config)
         {
             _bracketEntryRepository = bracketEntryRepository;
             _scoringService = scoringService;
+            _config = config;
         }
 
         /// <summary>
@@ -35,6 +38,12 @@ namespace RSMadnessEngine.Api.Services.BracketEntries
             if (errors.Any())
             {
                 throw new ApiValidationException("invalid-bracket-ranks", "Bracket entry is invalid.", errors);
+            }
+
+            // block edits (including a first-time draft) once the submission deadline has passed
+            if (IsPastDeadline())
+            {
+                throw new ApiConflictException("submission-deadline-passed", "The submission deadline has passed. Rankings can no longer be saved.");
             }
 
             var bracketEntry = await _bracketEntryRepository.GetByUserIdWithRanksAsync(userId);
@@ -90,6 +99,11 @@ namespace RSMadnessEngine.Api.Services.BracketEntries
                 throw new ApiConflictException("bracket-entry-locked", "Bracket entry has already been submitted and cannot be modified.");
             }
 
+            if (IsPastDeadline())
+            {
+                throw new ApiConflictException("submission-deadline-passed", "The submission deadline has passed. Entries can no longer be submitted.");
+            }
+
             var ranks = bracketEntry.EntryTeamRanks
                 .OrderBy(r => r.Rank)
                 .Select(r => new RankAssignment
@@ -113,6 +127,35 @@ namespace RSMadnessEngine.Api.Services.BracketEntries
             // return fresh response
             var response = await _bracketEntryRepository.GetResponseByUserIdAsync(userId);
             return response ?? throw new ApiNotFoundException("bracket-entry-not-found", "Submitted bracket could not be loaded.");
+        }
+
+        /// <summary>
+        /// Reports the configured submission deadline and whether it has already passed.
+        /// </summary>
+        public SubmissionDeadlineResponse GetSubmissionDeadlineStatus()
+        {
+            return new SubmissionDeadlineResponse
+            {
+                DeadlineUtc = GetSubmissionDeadlineUtc(),
+                IsPassed = IsPastDeadline()
+            };
+        }
+
+        private DateTime? GetSubmissionDeadlineUtc()
+        {
+            var raw = _config["Tournament:SubmissionDeadlineUtc"];
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                return null;
+            }
+
+            // parse explicitly as UTC -- an Unspecified-Kind DateTime gets silently treated as local time otherwise
+            return DateTime.Parse(raw, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal);
+        }
+
+        private bool IsPastDeadline()
+        {
+            return GetSubmissionDeadlineUtc() is { } deadline && DateTime.UtcNow > deadline;
         }
 
         /// <summary>

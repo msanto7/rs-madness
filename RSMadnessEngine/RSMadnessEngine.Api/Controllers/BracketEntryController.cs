@@ -50,5 +50,14 @@ namespace RSMadnessEngine.Api.Controllers
             var response = await _bracketEntryService.SubmitAsync(GetUserId());
             return Ok(response);
         }
+
+        /// <summary>
+        /// Reports the configured bracket submission deadline and whether it has passed.
+        /// </summary>
+        [HttpGet("submission-deadline")]
+        public ActionResult<SubmissionDeadlineResponse> GetSubmissionDeadline()
+        {
+            return Ok(_bracketEntryService.GetSubmissionDeadlineStatus());
+        }
     }
 }

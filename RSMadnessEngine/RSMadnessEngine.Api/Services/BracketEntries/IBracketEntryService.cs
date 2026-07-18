@@ -7,5 +7,6 @@ namespace RSMadnessEngine.Api.Services.BracketEntries
         Task<GetBracketEntryResponse> GetMyBracketEntryAsync(string userId);
         Task<GetBracketEntryResponse> SaveRanksAsync(string userId, SaveRanksRequest request);
         Task<GetBracketEntryResponse> SubmitAsync(string userId);
+        SubmissionDeadlineResponse GetSubmissionDeadlineStatus();
     }
 }

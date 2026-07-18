@@ -14,6 +14,10 @@ export function getApiErrorStatus(value: unknown): number | null {
   return isAppApiError(value) ? value.status : null;
 }
 
+export function getApiErrorCode(value: unknown): string | null {
+  return isAppApiError(value) ? value.errorCode ?? null : null;
+}
+
 export function getApiErrorMessages(value: unknown, fallback: string): string[] {
   if (!isAppApiError(value)) return [fallback];
   if (value.errors.length > 0) return value.errors;
