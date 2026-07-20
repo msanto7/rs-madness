@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router';
 import { useAuth } from '../hooks/useAuth';
 import apiClient from '../api/client';
+import { getApiErrorStatus } from '../api/errors';
 import './Layout.css';
 
 const navItems = [
@@ -29,7 +30,12 @@ export default function Layout() {
         // only need to know submission status once the deadline has actually passed
         const entryRes = await apiClient
           .get<{ submittedAt: string | null }>('/bracketentry/me')
-          .catch(() => null);
+          .catch((err: unknown) => {
+            // 404 means "no entry" -- treat as not submitted. Anything else is unknown
+            // status, not "not submitted" -- rethrow so the outer catch fails open.
+            if (getApiErrorStatus(err) === 404) return null;
+            throw err;
+          });
 
         if (cancelled) return;
         const isSubmitted = entryRes?.data.submittedAt != null;
