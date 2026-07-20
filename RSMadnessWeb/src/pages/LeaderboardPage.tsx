@@ -18,6 +18,12 @@ export default function LeaderboardPage() {
   const [bannerMessage, setBannerMessage] = useState<string | null>(
     (location.state as { message?: string } | null)?.message ?? null
   );
+  const [prevLocationState, setPrevLocationState] = useState(location.state);
+
+  if (location.state !== prevLocationState) {
+    setPrevLocationState(location.state);
+    setBannerMessage((location.state as { message?: string } | null)?.message ?? null);
+  }
 
   useEffect(() => {
     apiClient.get<LeaderboardEntry[]>('/leaderboard')

@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using RSMadnessEngine.Api.DTOs.BracketEntry;
+using RSMadnessEngine.Api.DTOs.BracketEntries;
 using RSMadnessEngine.Api.Services.BracketEntries;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;

@@ -130,6 +130,65 @@ export default function RankingPage() {
     }
   };
 
+  function redirectPastDeadline() {
+    navigate('/leaderboard', { state: { message: DEADLINE_MESSAGE } });
+  }
+
+  async function handleSave() {
+    setIsSaving(true);
+    try {
+      setActionMessage('');
+      setActionMessageType('');
+
+      const payload = {
+        ranks: teams.map((t) => ({ teamId: t.teamId, rank: t.rank })),
+      };
+
+      const res = await apiClient.put<EntryResponse>('/bracketentry/me/ranks', payload);
+      const sortedRanks = res.data.ranks.sort((a, b) => a.rank - b.rank);
+      setTeams(sortedRanks);
+      setSubmittedAt(res.data.submittedAt);
+      setHasSavedDraft(true);
+      setLastSavedSignature(buildRanksSignature(sortedRanks));
+      setActionMessage('Draft saved successfully.');
+      setActionMessageType('success');
+    } catch (err: unknown) {
+      if (getApiErrorCode(err) === 'submission-deadline-passed') {
+        redirectPastDeadline();
+        return;
+      }
+      setActionMessage(getApiErrorMessages(err, 'Save failed.').join(' '));
+      setActionMessageType('error');
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleSubmit() {
+    if (!hasSavedDraft) return;
+
+    setIsSubmitting(true);
+    try {
+      setActionMessage('');
+      setActionMessageType('');
+
+      const res = await apiClient.post<EntryResponse>('/bracketentry/me/submit');
+      setTeams(res.data.ranks.sort((a, b) => a.rank - b.rank));
+      setSubmittedAt(res.data.submittedAt);
+      setActionMessage('Entry submitted successfully.');
+      setActionMessageType('success');
+    } catch (err: unknown) {
+      if (getApiErrorCode(err) === 'submission-deadline-passed') {
+        redirectPastDeadline();
+        return;
+      }
+      setActionMessage(getApiErrorMessages(err, 'Submit failed.').join(' '));
+      setActionMessageType('error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   if (loading) return <p>Loading...</p>;
   if (loadError) return <p style={{ color: '#ef4444' }}>{loadError}</p>;
 
@@ -272,65 +331,6 @@ export default function RankingPage() {
       />
     </div>
   );
-
-  function redirectPastDeadline() {
-    navigate('/leaderboard', { state: { message: DEADLINE_MESSAGE } });
-  }
-
-  async function handleSave() {
-    setIsSaving(true);
-    try {
-      setActionMessage('');
-      setActionMessageType('');
-
-      const payload = {
-        ranks: teams.map((t) => ({ teamId: t.teamId, rank: t.rank })),
-      };
-
-      const res = await apiClient.put<EntryResponse>('/bracketentry/me/ranks', payload);
-      const sortedRanks = res.data.ranks.sort((a, b) => a.rank - b.rank);
-      setTeams(sortedRanks);
-      setSubmittedAt(res.data.submittedAt);
-      setHasSavedDraft(true);
-      setLastSavedSignature(buildRanksSignature(sortedRanks));
-      setActionMessage('Draft saved successfully.');
-      setActionMessageType('success');
-    } catch (err: unknown) {
-      if (getApiErrorCode(err) === 'submission-deadline-passed') {
-        redirectPastDeadline();
-        return;
-      }
-      setActionMessage(getApiErrorMessages(err, 'Save failed.').join(' '));
-      setActionMessageType('error');
-    } finally {
-      setIsSaving(false);
-    }
-  }
-
-  async function handleSubmit() {
-    if (!hasSavedDraft) return;
-
-    setIsSubmitting(true);
-    try {
-      setActionMessage('');
-      setActionMessageType('');
-
-      const res = await apiClient.post<EntryResponse>('/bracketentry/me/submit');
-      setTeams(res.data.ranks.sort((a, b) => a.rank - b.rank));
-      setSubmittedAt(res.data.submittedAt);
-      setActionMessage('Entry submitted successfully.');
-      setActionMessageType('success');
-    } catch (err: unknown) {
-      if (getApiErrorCode(err) === 'submission-deadline-passed') {
-        redirectPastDeadline();
-        return;
-      }
-      setActionMessage(getApiErrorMessages(err, 'Submit failed.').join(' '));
-      setActionMessageType('error');
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
 }
 
 const btnStyle: React.CSSProperties = {

@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-﻿namespace RSMadnessEngine.Api.DTOs.BracketEntry
+﻿namespace RSMadnessEngine.Api.DTOs.BracketEntries
 {
     public class SaveRanksRequest
     {

@@ -1,4 +1,4 @@
-namespace RSMadnessEngine.Api.DTOs.BracketEntry
+namespace RSMadnessEngine.Api.DTOs.BracketEntries
 {
     /// <summary>
     /// Reports the configured bracket submission deadline and whether it has already passed.

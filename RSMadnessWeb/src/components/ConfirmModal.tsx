@@ -69,6 +69,7 @@ export default function ConfirmModal({
         </p>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
           <button
+            type="button"
             onClick={onCancel}
             style={{
               background: 'var(--navy)',
@@ -84,6 +85,7 @@ export default function ConfirmModal({
             {cancelLabel}
           </button>
           <button
+            type="button"
             onClick={onConfirm}
             style={{
               background: 'var(--orange)',
