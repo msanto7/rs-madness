@@ -134,10 +134,11 @@ namespace RSMadnessEngine.Api.Services.BracketEntries
         /// </summary>
         public SubmissionDeadlineResponse GetSubmissionDeadlineStatus()
         {
+            var deadline = GetSubmissionDeadlineUtc();
             return new SubmissionDeadlineResponse
             {
-                DeadlineUtc = GetSubmissionDeadlineUtc(),
-                IsPassed = IsPastDeadline()
+                DeadlineUtc = deadline,
+                IsPassed = IsPastDeadline(deadline)
             };
         }
 
@@ -161,7 +162,12 @@ namespace RSMadnessEngine.Api.Services.BracketEntries
 
         private bool IsPastDeadline()
         {
-            return GetSubmissionDeadlineUtc() is { } deadline && DateTime.UtcNow > deadline;
+            return IsPastDeadline(GetSubmissionDeadlineUtc());
+        }
+
+        private static bool IsPastDeadline(DateTime? deadline)
+        {
+            return deadline is { } d && DateTime.UtcNow > d;
         }
 
         /// <summary>
