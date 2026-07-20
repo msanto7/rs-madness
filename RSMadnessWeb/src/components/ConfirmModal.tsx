@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useId, useRef } from 'react';
 
 interface ConfirmModalProps {
   open: boolean;
@@ -10,6 +10,8 @@ interface ConfirmModalProps {
   onCancel: () => void;
 }
 
+const FOCUSABLE_SELECTOR = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
 export default function ConfirmModal({
   open,
   title,
@@ -19,11 +21,49 @@ export default function ConfirmModal({
   onConfirm,
   onCancel,
 }: ConfirmModalProps) {
+  const titleId = useId();
+  const messageId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const cancelButtonRef = useRef<HTMLButtonElement>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+
+  // move focus into the dialog on open, and back to the trigger element on close
+  useEffect(() => {
+    if (!open) return;
+
+    previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
+    cancelButtonRef.current?.focus();
+
+    return () => {
+      previouslyFocusedRef.current?.focus();
+    };
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onCancel();
+      if (event.key === 'Escape') {
+        onCancel();
+        return;
+      }
+
+      if (event.key !== 'Tab' || !dialogRef.current) return;
+
+      // trap focus: wrap Tab/Shift+Tab between the dialog's first and last focusable elements
+      const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -47,9 +87,11 @@ export default function ConfirmModal({
       }}
     >
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="confirm-modal-title"
+        aria-labelledby={titleId}
+        aria-describedby={messageId}
         onClick={(e) => e.stopPropagation()}
         style={{
           background: 'var(--bg-surface)',
@@ -61,14 +103,15 @@ export default function ConfirmModal({
           boxShadow: '0 10px 30px rgba(0, 0, 0, 0.4)',
         }}
       >
-        <h2 id="confirm-modal-title" style={{ margin: '0 0 0.75rem', color: 'var(--text-h)', fontSize: '1.1rem' }}>
+        <h2 id={titleId} style={{ margin: '0 0 0.75rem', color: 'var(--text-h)', fontSize: '1.1rem' }}>
           {title}
         </h2>
-        <p style={{ margin: '0 0 1.5rem', color: 'var(--text-h)', fontSize: '0.95rem', lineHeight: 1.5 }}>
+        <p id={messageId} style={{ margin: '0 0 1.5rem', color: 'var(--text-h)', fontSize: '0.95rem', lineHeight: 1.5 }}>
           {message}
         </p>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
           <button
+            ref={cancelButtonRef}
             type="button"
             onClick={onCancel}
             style={{

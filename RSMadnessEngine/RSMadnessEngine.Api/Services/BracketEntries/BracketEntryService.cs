@@ -40,18 +40,18 @@ namespace RSMadnessEngine.Api.Services.BracketEntries
                 throw new ApiValidationException("invalid-bracket-ranks", "Bracket entry is invalid.", errors);
             }
 
-            // block edits (including a first-time draft) once the submission deadline has passed
-            if (IsPastDeadline())
-            {
-                throw new ApiConflictException("submission-deadline-passed", "The submission deadline has passed. Rankings can no longer be saved.");
-            }
-
             var bracketEntry = await _bracketEntryRepository.GetByUserIdWithRanksAsync(userId);
 
             // make sure we haven't locked in the bracket yet
             if (bracketEntry != null && bracketEntry.SubmittedAt != null)
             {
                 throw new ApiConflictException("bracket-entry-locked", "Bracket entry has already been submitted and cannot be modified.");
+            }
+
+            // block edits (including a first-time draft) once the submission deadline has passed
+            if (IsPastDeadline())
+            {
+                throw new ApiConflictException("submission-deadline-passed", "The submission deadline has passed. Rankings can no longer be saved.");
             }
 
             // add a new entry if the user has not made one yet

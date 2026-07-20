@@ -21,14 +21,19 @@ export default function Layout() {
   useEffect(() => {
     let cancelled = false;
 
-    Promise.all([
-      apiClient.get<{ isPassed: boolean }>('/bracketentry/submission-deadline'),
-      apiClient.get<{ submittedAt: string | null }>('/bracketentry/me').catch(() => null),
-    ])
-      .then(([deadlineRes, entryRes]) => {
+    apiClient
+      .get<{ isPassed: boolean }>('/bracketentry/submission-deadline')
+      .then(async (deadlineRes) => {
+        if (cancelled || !deadlineRes.data.isPassed) return;
+
+        // only need to know submission status once the deadline has actually passed
+        const entryRes = await apiClient
+          .get<{ submittedAt: string | null }>('/bracketentry/me')
+          .catch(() => null);
+
         if (cancelled) return;
         const isSubmitted = entryRes?.data.submittedAt != null;
-        setHideRanking(deadlineRes.data.isPassed && !isSubmitted);
+        setHideRanking(!isSubmitted);
       })
       .catch(() => {
         // fail open -- keep the tab visible if the status check itself fails
