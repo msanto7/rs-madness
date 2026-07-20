@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router';
 import { useAuth } from '../hooks/useAuth';
+import apiClient from '../api/client';
+import { getApiErrorStatus } from '../api/errors';
 import './Layout.css';
 
 const navItems = [
@@ -13,6 +15,42 @@ export default function Layout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [hideRanking, setHideRanking] = useState(false);
+
+  // hide the Ranking tab once the deadline has passed for anyone who never submitted --
+  // RankingPage itself still enforces this on direct navigation, this is just nav visibility
+  useEffect(() => {
+    let cancelled = false;
+
+    apiClient
+      .get<{ isPassed: boolean }>('/bracketentry/submission-deadline')
+      .then(async (deadlineRes) => {
+        if (cancelled || !deadlineRes.data.isPassed) return;
+
+        // only need to know submission status once the deadline has actually passed
+        const entryRes = await apiClient
+          .get<{ submittedAt: string | null }>('/bracketentry/me')
+          .catch((err: unknown) => {
+            // 404 means "no entry" -- treat as not submitted. Anything else is unknown
+            // status, not "not submitted" -- rethrow so the outer catch fails open.
+            if (getApiErrorStatus(err) === 404) return null;
+            throw err;
+          });
+
+        if (cancelled) return;
+        const isSubmitted = entryRes?.data.submittedAt != null;
+        setHideRanking(!isSubmitted);
+      })
+      .catch(() => {
+        // fail open -- keep the tab visible if the status check itself fails
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const visibleNavItems = navItems.filter((item) => item.to !== '/ranking' || !hideRanking);
 
   const handleLogout = async () => {
     await logout();
@@ -30,7 +68,7 @@ export default function Layout() {
           </div>
 
           <nav className="top-nav__links top-nav__links--desktop">
-            {navItems.map((item) => (
+            {visibleNavItems.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
@@ -62,7 +100,7 @@ export default function Layout() {
 
         <div className={`top-nav__mobile-panel ${isMobileMenuOpen ? 'top-nav__mobile-panel--open' : ''}`}>
           <nav className="top-nav__links top-nav__links--mobile">
-            {navItems.map((item) => (
+            {visibleNavItems.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}

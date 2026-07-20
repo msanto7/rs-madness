@@ -1,7 +1,8 @@
-using RSMadnessEngine.Api.DTOs.BracketEntry;
+using RSMadnessEngine.Api.DTOs.BracketEntries;
 using RSMadnessEngine.Api.Errors;
 using RSMadnessEngine.Api.Services.BracketEntries.Repositories;
 using RSMadnessEngine.Data.Entities;
+using System.Globalization;
 
 namespace RSMadnessEngine.Api.Services.BracketEntries
 {
@@ -9,11 +10,13 @@ namespace RSMadnessEngine.Api.Services.BracketEntries
     {
         private readonly IBracketEntryRepository _bracketEntryRepository;
         private readonly IScoringService _scoringService;
+        private readonly IConfiguration _config;
 
-        public BracketEntryService(IBracketEntryRepository bracketEntryRepository, IScoringService scoringService)
+        public BracketEntryService(IBracketEntryRepository bracketEntryRepository, IScoringService scoringService, IConfiguration config)
         {
             _bracketEntryRepository = bracketEntryRepository;
             _scoringService = scoringService;
+            _config = config;
         }
 
         /// <summary>
@@ -43,6 +46,12 @@ namespace RSMadnessEngine.Api.Services.BracketEntries
             if (bracketEntry != null && bracketEntry.SubmittedAt != null)
             {
                 throw new ApiConflictException("bracket-entry-locked", "Bracket entry has already been submitted and cannot be modified.");
+            }
+
+            // block edits (including a first-time draft) once the submission deadline has passed
+            if (IsPastDeadline())
+            {
+                throw new ApiConflictException("submission-deadline-passed", "The submission deadline has passed. Rankings can no longer be saved.");
             }
 
             // add a new entry if the user has not made one yet
@@ -90,6 +99,11 @@ namespace RSMadnessEngine.Api.Services.BracketEntries
                 throw new ApiConflictException("bracket-entry-locked", "Bracket entry has already been submitted and cannot be modified.");
             }
 
+            if (IsPastDeadline())
+            {
+                throw new ApiConflictException("submission-deadline-passed", "The submission deadline has passed. Entries can no longer be submitted.");
+            }
+
             var ranks = bracketEntry.EntryTeamRanks
                 .OrderBy(r => r.Rank)
                 .Select(r => new RankAssignment
@@ -113,6 +127,47 @@ namespace RSMadnessEngine.Api.Services.BracketEntries
             // return fresh response
             var response = await _bracketEntryRepository.GetResponseByUserIdAsync(userId);
             return response ?? throw new ApiNotFoundException("bracket-entry-not-found", "Submitted bracket could not be loaded.");
+        }
+
+        /// <summary>
+        /// Reports the configured submission deadline and whether it has already passed.
+        /// </summary>
+        public SubmissionDeadlineResponse GetSubmissionDeadlineStatus()
+        {
+            var deadline = GetSubmissionDeadlineUtc();
+            return new SubmissionDeadlineResponse
+            {
+                DeadlineUtc = deadline,
+                IsPassed = IsPastDeadline(deadline)
+            };
+        }
+
+        private DateTime? GetSubmissionDeadlineUtc()
+        {
+            var raw = _config["Tournament:SubmissionDeadlineUtc"];
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                return null;
+            }
+
+            // parse explicitly as UTC -- an Unspecified-Kind DateTime gets silently treated as local time otherwise
+            // fail open (treat as unset) on malformed config rather than 500ing the deadline check / save / submit endpoints
+            if (!DateTime.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out var deadline))
+            {
+                return null;
+            }
+
+            return deadline;
+        }
+
+        private bool IsPastDeadline()
+        {
+            return IsPastDeadline(GetSubmissionDeadlineUtc());
+        }
+
+        private static bool IsPastDeadline(DateTime? deadline)
+        {
+            return deadline is { } d && DateTime.UtcNow > d;
         }
 
         /// <summary>

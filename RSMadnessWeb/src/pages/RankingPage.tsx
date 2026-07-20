@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates, arrayMove } from '@dnd-kit/sortable';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import SortableTeamRow from '../components/SortableTeamRow';
+import ConfirmModal from '../components/ConfirmModal';
 import apiClient from '../api/client';
-import { getApiErrorMessages, getApiErrorStatus } from '../api/errors';
+import { getApiErrorCode, getApiErrorMessages, getApiErrorStatus } from '../api/errors';
+
+const DEADLINE_MESSAGE = 'The submission deadline has passed. Rankings are no longer available.';
 
 interface TeamRank {
   teamId: number;
@@ -36,6 +40,7 @@ function buildRanksSignature(ranks: TeamRank[]): string {
 }
 
 export default function RankingPage() {
+  const navigate = useNavigate();
   const [teams, setTeams] = useState<TeamRank[]>([]);
   const [submittedAt, setSubmittedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -46,6 +51,7 @@ export default function RankingPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastSavedSignature, setLastSavedSignature] = useState<string | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -73,9 +79,25 @@ export default function RankingPage() {
   }, []);
 
   const loadData = async () => {
+    // kick off in parallel with the entry fetch; fail open (a network blip here shouldn't
+    // block a working page -- SaveRanksAsync/SubmitAsync remain the real server-side gate)
+    const deadlinePassed = apiClient
+      .get<{ isPassed: boolean }>('/bracketentry/submission-deadline')
+      .then((res) => res.data.isPassed)
+      .catch(() => false);
+
     try {
       // Try to load existing entry first
       const entryRes = await apiClient.get<EntryResponse>('/bracketentry/me');
+      const isSubmitted = entryRes.data.submittedAt !== null;
+
+      // only unsubmitted users get bounced once the deadline passes -- a user who already
+      // submitted keeps seeing their own locked bracket regardless of the deadline
+      if (!isSubmitted && (await deadlinePassed)) {
+        navigate('/leaderboard', { state: { message: DEADLINE_MESSAGE } });
+        return;
+      }
+
       const sortedRanks = [...entryRes.data.ranks].sort((a, b) => a.rank - b.rank);
       setSubmittedAt(entryRes.data.submittedAt);
       setTeams(sortedRanks);
@@ -83,6 +105,11 @@ export default function RankingPage() {
       setLastSavedSignature(buildRanksSignature(sortedRanks));
     } catch (err: unknown) {
       if (getApiErrorStatus(err) === 404) {
+        if (await deadlinePassed) {
+          navigate('/leaderboard', { state: { message: DEADLINE_MESSAGE } });
+          return;
+        }
+
         const teamsRes = await apiClient.get<Team[]>('/teams');
         setTeams(
           teamsRes.data.map((t, i) => ({
@@ -102,6 +129,65 @@ export default function RankingPage() {
       setLoading(false);
     }
   };
+
+  function redirectPastDeadline() {
+    navigate('/leaderboard', { state: { message: DEADLINE_MESSAGE } });
+  }
+
+  async function handleSave() {
+    setIsSaving(true);
+    try {
+      setActionMessage('');
+      setActionMessageType('');
+
+      const payload = {
+        ranks: teams.map((t) => ({ teamId: t.teamId, rank: t.rank })),
+      };
+
+      const res = await apiClient.put<EntryResponse>('/bracketentry/me/ranks', payload);
+      const sortedRanks = res.data.ranks.sort((a, b) => a.rank - b.rank);
+      setTeams(sortedRanks);
+      setSubmittedAt(res.data.submittedAt);
+      setHasSavedDraft(true);
+      setLastSavedSignature(buildRanksSignature(sortedRanks));
+      setActionMessage('Draft saved successfully.');
+      setActionMessageType('success');
+    } catch (err: unknown) {
+      if (getApiErrorCode(err) === 'submission-deadline-passed') {
+        redirectPastDeadline();
+        return;
+      }
+      setActionMessage(getApiErrorMessages(err, 'Save failed.').join(' '));
+      setActionMessageType('error');
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleSubmit() {
+    if (!hasSavedDraft) return;
+
+    setIsSubmitting(true);
+    try {
+      setActionMessage('');
+      setActionMessageType('');
+
+      const res = await apiClient.post<EntryResponse>('/bracketentry/me/submit');
+      setTeams(res.data.ranks.sort((a, b) => a.rank - b.rank));
+      setSubmittedAt(res.data.submittedAt);
+      setActionMessage('Entry submitted successfully.');
+      setActionMessageType('success');
+    } catch (err: unknown) {
+      if (getApiErrorCode(err) === 'submission-deadline-passed') {
+        redirectPastDeadline();
+        return;
+      }
+      setActionMessage(getApiErrorMessages(err, 'Submit failed.').join(' '));
+      setActionMessageType('error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   if (loading) return <p>Loading...</p>;
   if (loadError) return <p style={{ color: '#ef4444' }}>{loadError}</p>;
@@ -158,7 +244,7 @@ export default function RankingPage() {
             {isSaving ? 'Saving...' : 'Save Draft'}
           </button>
           <button
-            onClick={handleSubmit}
+            onClick={() => setShowConfirmModal(true)}
             style={submitBtnStyle}
             disabled={submitDisabled}
             title={!hasSavedDraft ? 'Save your bracket first to enable submit.' : undefined}
@@ -231,55 +317,20 @@ export default function RankingPage() {
           ))}
         </SortableContext>
       </DndContext>
+
+      <ConfirmModal
+        open={showConfirmModal}
+        title="Submit Entry"
+        message="Submitting locks your bracket permanently — you won't be able to make further changes. Are you sure?"
+        confirmLabel="Yes, Submit"
+        onConfirm={() => {
+          setShowConfirmModal(false);
+          void handleSubmit();
+        }}
+        onCancel={() => setShowConfirmModal(false)}
+      />
     </div>
   );
-
-  async function handleSave() {
-    setIsSaving(true);
-    try {
-      setActionMessage('');
-      setActionMessageType('');
-
-      const payload = {
-        ranks: teams.map((t) => ({ teamId: t.teamId, rank: t.rank })),
-      };
-
-      const res = await apiClient.put<EntryResponse>('/bracketentry/me/ranks', payload);
-      const sortedRanks = res.data.ranks.sort((a, b) => a.rank - b.rank);
-      setTeams(sortedRanks);
-      setSubmittedAt(res.data.submittedAt);
-      setHasSavedDraft(true);
-      setLastSavedSignature(buildRanksSignature(sortedRanks));
-      setActionMessage('Draft saved successfully.');
-      setActionMessageType('success');
-    } catch (err: unknown) {
-      setActionMessage(getApiErrorMessages(err, 'Save failed.').join(' '));
-      setActionMessageType('error');
-    } finally {
-      setIsSaving(false);
-    }
-  }
-
-  async function handleSubmit() {
-    if (!hasSavedDraft) return;
-
-    setIsSubmitting(true);
-    try {
-      setActionMessage('');
-      setActionMessageType('');
-
-      const res = await apiClient.post<EntryResponse>('/bracketentry/me/submit');
-      setTeams(res.data.ranks.sort((a, b) => a.rank - b.rank));
-      setSubmittedAt(res.data.submittedAt);
-      setActionMessage('Entry submitted successfully.');
-      setActionMessageType('success');
-    } catch (err: unknown) {
-      setActionMessage(getApiErrorMessages(err, 'Submit failed.').join(' '));
-      setActionMessageType('error');
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
 }
 
 const btnStyle: React.CSSProperties = {

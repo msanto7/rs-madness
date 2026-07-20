@@ -1,4 +1,4 @@
-﻿using RSMadnessEngine.Api.DTOs.BracketEntry;
+﻿using RSMadnessEngine.Api.DTOs.BracketEntries;
 using RSMadnessEngine.Data.Entities;
 
 namespace RSMadnessEngine.Api.Services.BracketEntries.Repositories

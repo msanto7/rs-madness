@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using RSMadnessEngine.Api.DTOs.BracketEntry;
+using RSMadnessEngine.Api.DTOs.BracketEntries;
 using RSMadnessEngine.Data;
 using RSMadnessEngine.Data.Entities;
 

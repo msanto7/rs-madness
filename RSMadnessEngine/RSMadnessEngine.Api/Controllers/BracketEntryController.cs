@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using RSMadnessEngine.Api.DTOs.BracketEntry;
+using RSMadnessEngine.Api.DTOs.BracketEntries;
 using RSMadnessEngine.Api.Services.BracketEntries;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -49,6 +49,15 @@ namespace RSMadnessEngine.Api.Controllers
         {
             var response = await _bracketEntryService.SubmitAsync(GetUserId());
             return Ok(response);
+        }
+
+        /// <summary>
+        /// Reports the configured bracket submission deadline and whether it has passed.
+        /// </summary>
+        [HttpGet("submission-deadline")]
+        public ActionResult<SubmissionDeadlineResponse> GetSubmissionDeadline()
+        {
+            return Ok(_bracketEntryService.GetSubmissionDeadlineStatus());
         }
     }
 }
