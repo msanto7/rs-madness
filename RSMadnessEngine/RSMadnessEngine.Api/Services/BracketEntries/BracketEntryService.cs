@@ -150,7 +150,13 @@ namespace RSMadnessEngine.Api.Services.BracketEntries
             }
 
             // parse explicitly as UTC -- an Unspecified-Kind DateTime gets silently treated as local time otherwise
-            return DateTime.Parse(raw, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal);
+            // fail open (treat as unset) on malformed config rather than 500ing the deadline check / save / submit endpoints
+            if (!DateTime.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out var deadline))
+            {
+                return null;
+            }
+
+            return deadline;
         }
 
         private bool IsPastDeadline()

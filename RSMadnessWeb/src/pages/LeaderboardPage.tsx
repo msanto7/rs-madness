@@ -32,9 +32,14 @@ export default function LeaderboardPage() {
   return (
     <div>
       {bannerMessage && (
-        <div
+        <button
+          type="button"
           onClick={() => setBannerMessage(null)}
           style={{
+            display: 'block',
+            width: '100%',
+            textAlign: 'left',
+            border: 'none',
             background: 'var(--navy)',
             color: 'var(--orange)',
             padding: '0.75rem 1rem',
@@ -47,7 +52,7 @@ export default function LeaderboardPage() {
           title="Dismiss"
         >
           {bannerMessage}
-        </div>
+        </button>
       )}
 
       <h1 style={{ marginBottom: '1rem' }}>Leaderboard</h1>
