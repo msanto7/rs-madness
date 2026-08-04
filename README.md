@@ -5,7 +5,7 @@ March Madness pool app based on `Blank Bracket 2026.xlsx`.
 - Live site: https://rs-madness-web.onrender.com
 - Frontend: React + TypeScript (Vite)
 - Backend: .NET 10 Web API + EF Core
-- Database: PostgreSQL 17
+- Database: PostgreSQL 18
 
 ## Goal
 
@@ -51,7 +51,7 @@ Build a simple company pool app where users can:
 
 ### Database
 
-- PostgreSQL 17
+- PostgreSQL 18
 - Local DB via Docker Compose
 - Managed PostgreSQL in Render for production
 
